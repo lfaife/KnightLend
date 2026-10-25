@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+server/.env
+server/uploads/*
+!server/uploads/.gitkeep
+server/seed_images/
+client/node_modules/
+client/dist/
+.DS_Store
+*.log
