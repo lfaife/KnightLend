@@ -195,3 +195,14 @@ class HoldSuggestion(APIModel):
     min_hold: float
     max_hold: float
     tier_label: str
+
+
+class MyListing(APIModel):
+    card: ListingCard
+    status: str
+    open_rentals: int
+    rentals_count: int
+
+
+class PhotoUploadOut(APIModel):
+    urls: list[str]

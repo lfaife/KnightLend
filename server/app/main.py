@@ -10,7 +10,20 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.db import init_db, state
 from app.models import User
-from app.routers import auth, demo, listings, messages, meta, notifications, rentals
+from app.routers import (
+    auth,
+    dashboard,
+    demo,
+    listings,
+    messages,
+    meta,
+    moderation,
+    notifications,
+    rentals,
+    reports,
+    users,
+    verification,
+)
 from app.services.holds import IllegalHoldTransition
 from app.services.jobs import run_jobs
 
@@ -69,7 +82,20 @@ def create_app(use_lifespan: bool = True) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for router in (meta.router, auth.router, listings.router, rentals.router, messages.router, notifications.router, demo.router):
+    for router in (
+        meta.router,
+        auth.router,
+        users.router,
+        verification.router,
+        listings.router,
+        rentals.router,
+        messages.router,
+        notifications.router,
+        dashboard.router,
+        reports.router,
+        moderation.router,
+        demo.router,
+    ):
         app.include_router(router)
 
     settings.upload_dir.mkdir(parents=True, exist_ok=True)

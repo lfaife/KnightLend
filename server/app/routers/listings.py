@@ -3,11 +3,12 @@ from math import ceil
 from typing import Literal
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from app.core import clock
-from app.core.security import get_current_user, get_optional_user
-from app.models.listing import Category, Condition, Listing
+from app.core.security import get_current_user, get_optional_user, require_active_member
+from app.models.listing import Bundle, Category, Condition, Listing, Pickup, Prices, Spec
+from app.models.rental import Rental
 from app.models.review import Review
 from app.models.user import User
 from app.schemas.common import OK
@@ -16,7 +17,10 @@ from app.schemas.listing import (
     HoldSuggestion,
     ListingCard,
     ListingDetail,
+    ListingIn,
     ListingPage,
+    MyListing,
+    PhotoUploadOut,
     PickupOut,
     PricesOut,
     QuoteCheck,
@@ -25,7 +29,8 @@ from app.schemas.listing import (
 )
 from app.services import listings as svc
 from app.services.geo import AREAS, PICKUP_SPOTS
-from app.services.pricing import build_quote, hold_tier, suggest_hold
+from app.services.pricing import build_quote, hold_in_range, hold_tier, suggest_hold
+from app.services.uploads import save_images
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
 
@@ -248,3 +253,119 @@ async def unsave_listing(listing_id: PydanticObjectId, user: User = Depends(get_
     user.saved_listing_ids = [i for i in user.saved_listing_ids if i != listing_id]
     await user.save()
     return OK(message="Removed from saved")
+
+
+# ---------- M6: lender tools ----------
+
+
+def _apply(listing: Listing, body: ListingIn) -> None:
+    tier = hold_tier(body.estimated_value)
+    if not hold_in_range(body.estimated_value, body.hold_amount):
+        raise HTTPException(
+            422,
+            f"For an item worth ${body.estimated_value:,.0f}, the protection hold must be between "
+            f"${tier['min_hold']:,.0f} and ${tier['max_hold']:,.0f}.",
+        )
+    place = next((p for p in [*PICKUP_SPOTS, *AREAS] if p["id"] == body.pickup_spot_id), None)
+    if place is None:
+        raise HTTPException(422, "Pick one of the listed pickup spots.")
+    if body.bundle and (not body.bundle.includes or body.bundle.extra_per_day <= 0):
+        raise HTTPException(422, "A bundle needs at least one item and a price per day.")
+    listing.title = body.title.strip()
+    listing.description = body.description.strip()
+    listing.category = body.category
+    listing.tags = [t.strip() for t in body.tags if t.strip()][:8]
+    listing.specs = [
+        Spec(label=s.label.strip(), value=s.value.strip()) for s in body.specs if s.label.strip() and s.value.strip()
+    ]
+    listing.condition = body.condition
+    listing.condition_notes = body.condition_notes.strip()
+    listing.estimated_value = body.estimated_value
+    listing.prices = Prices(**body.prices.model_dump())
+    listing.bundle = Bundle(**body.bundle.model_dump()) if body.bundle else None
+    listing.hold_amount = body.hold_amount
+    listing.max_rental_days = body.max_rental_days
+    listing.usage_guide = [u.strip() for u in body.usage_guide if u.strip()]
+    listing.sanitized = body.sanitized
+    listing.sanitized_note = (body.sanitized_note or "").strip() or None
+    listing.pickup = Pickup(
+        area_name=place["name"], lat=place["lat"], lng=place["lng"], spot_id=place["id"] if place in PICKUP_SPOTS else None
+    )
+    listing.requires_approval = body.requires_approval
+    listing.photos = body.photos
+    listing.status = body.status
+
+
+def _require_can_list(user: User) -> None:
+    if not user.verified:
+        raise HTTPException(403, "Verify your UCF student or alumni status before you list an item.")
+
+
+@router.post("", response_model=ListingDetail, status_code=201)
+async def create_listing(body: ListingIn, user: User = Depends(require_active_member)) -> ListingDetail:
+    _require_can_list(user)
+    if not body.photos:
+        raise HTTPException(422, "Add at least one photo so borrowers can see the item.")
+    now = await clock.now()
+    listing = Listing.model_construct(
+        owner_id=user.id, rating_avg=0, rating_count=0, rentals_count=0, created_at=now, updated_at=now
+    )
+    _apply(listing, body)
+    listing = Listing(**listing.model_dump(exclude={"id", "revision_id"}))
+    await listing.insert()
+    return await listing_detail(listing.id, user)
+
+
+@router.patch("/{listing_id}", response_model=ListingDetail)
+async def update_listing(
+    listing_id: PydanticObjectId, body: ListingIn, user: User = Depends(require_active_member)
+) -> ListingDetail:
+    listing = await get_listing_or_404(listing_id)
+    if listing.owner_id != user.id:
+        raise HTTPException(403, "Only the owner can edit this listing.")
+    _apply(listing, body)
+    listing.updated_at = await clock.now()
+    await listing.save()
+    return await listing_detail(listing.id, user)
+
+
+@router.delete("/{listing_id}", response_model=OK)
+async def remove_listing(listing_id: PydanticObjectId, user: User = Depends(get_current_user)) -> OK:
+    listing = await get_listing_or_404(listing_id)
+    if listing.owner_id != user.id:
+        raise HTTPException(403, "Only the owner can remove this listing.")
+    open_rentals = await Rental.find(
+        {
+            "listing_id": listing.id,
+            "status": {"$in": ["requested", "approved", "confirmed", "in_progress", "return_pending", "claim_open"]},
+        }
+    ).count()
+    if open_rentals:
+        raise HTTPException(409, "This item has open rentals. Pause it instead, and remove it once they finish.")
+    listing.status = "removed"
+    await listing.save()
+    return OK(message="Listing removed")
+
+
+@router.get("/mine/all", response_model=list[MyListing])
+async def my_listings(user: User = Depends(get_current_user)) -> list[MyListing]:
+    listings = await Listing.find({"owner_id": user.id, "status": {"$ne": "removed"}}).sort(-Listing.created_at).to_list()
+    out = []
+    for x in listings:
+        open_count = await Rental.find(
+            {
+                "listing_id": x.id,
+                "status": {"$in": ["requested", "approved", "confirmed", "in_progress", "return_pending", "claim_open"]},
+            }
+        ).count()
+        out.append(MyListing(card=svc.card(x, user, 0), status=x.status, open_rentals=open_count, rentals_count=x.rentals_count))
+    return out
+
+
+@router.post("/photos", response_model=PhotoUploadOut, status_code=201)
+async def upload_listing_photos(
+    files: list[UploadFile] = File(..., description="Up to 6 JPG, PNG, WebP or GIF photos, 5 MB each"),
+    user: User = Depends(require_active_member),
+) -> PhotoUploadOut:
+    _require_can_list(user)
+    return PhotoUploadOut(urls=await save_images(files, f"listings/{user.id}"))

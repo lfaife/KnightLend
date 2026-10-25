@@ -170,6 +170,68 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
+export interface ListingIn {
+  title: string;
+  description: string;
+  category: Category;
+  tags: string[];
+  specs: Spec[];
+  condition: Condition;
+  condition_notes: string;
+  estimated_value: number;
+  prices: Prices;
+  bundle: Bundle | null;
+  hold_amount: number;
+  max_rental_days: number;
+  usage_guide: string[];
+  sanitized: boolean;
+  sanitized_note: string | null;
+  pickup_spot_id: string;
+  requires_approval: boolean;
+  photos: string[];
+  status: "active" | "paused";
+}
+export interface HoldSuggestion {
+  estimated_value: number;
+  suggested: number;
+  min_hold: number;
+  max_hold: number;
+  tier_label: string;
+}
+export interface MyListing {
+  card: ListingCard;
+  status: string;
+  open_rentals: number;
+  rentals_count: number;
+}
+export interface Profile {
+  user: UserPublic;
+  reviews_as_lender: Review[];
+  reviews_as_borrower: Review[];
+  listings: ListingCard[];
+  past_rentals: { listing_title: string; role: string; start_date: string; end_date: string }[];
+  is_me: boolean;
+}
+export interface MoneySide {
+  charged: number;
+  held: number;
+  pending_holds: number;
+  released: number;
+  captured: number;
+  earned: number;
+}
+export interface Dashboard {
+  borrowing: MoneySide;
+  lending: MoneySide;
+  reminders: { rental_id: string; kind: string; text: string }[];
+  counts: Record<string, number>;
+}
+export interface ModOverview {
+  flagged: { user: UserPublic; flag_reason: string | null; restricted: boolean; restricted_reason: string | null; low_reviews: string[]; open_reports: number }[];
+  reports: { id: string; reporter_name: string; target_type: string; target_id: string; target_label: string; reason: string; details: string; created_at: string }[];
+  disputes: { rental_id: string; listing_title: string; borrower_name: string; lender_name: string; claim_type: string; amount: number; filed_at: string }[];
+}
+export type ReportReason = "no_show" | "damaged_item" | "unsafe_behavior" | "scam" | "misleading_listing" | "other";
 export interface DemoUser {
   id: string;
   label: string;
@@ -530,6 +592,44 @@ export const api = {
     save: (id: string) => post<{ ok: boolean }>(`/api/listings/${id}/save`),
     unsave: (id: string) => del<{ ok: boolean }>(`/api/listings/${id}/save`),
     saved: () => get<ListingCard[]>("/api/listings/saved"),
+    mine: () => get<MyListing[]>("/api/listings/mine/all"),
+    holdSuggestion: (value: number) => get<HoldSuggestion>(`/api/listings/hold-suggestion${qs({ value })}`),
+    create: (body: ListingIn) => post<ListingDetail>("/api/listings", body),
+    update: (id: string, body: ListingIn) => patch<ListingDetail>(`/api/listings/${id}`, body),
+    remove: (id: string) => del<{ ok: boolean; message: string }>(`/api/listings/${id}`),
+    uploadPhotos: (files: File[]) => {
+      const form = new FormData();
+      files.forEach((f) => form.append("files", f));
+      return upload<{ urls: string[] }>("/api/listings/photos", form);
+    },
+  },
+  users: {
+    profile: (id: string) => get<Profile>(`/api/users/${id}`),
+    updateMe: (body: Partial<{ name: string; bio: string; major: string; home_area: string }>) => patch<UserMe>("/api/users/me", body),
+    avatar: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return upload<UserMe>("/api/users/me/avatar", form);
+    },
+  },
+  verification: {
+    studentStart: (ucf_email: string) => post<{ message: string; simulated_code: string | null; user: UserMe }>("/api/verification/student/start", { ucf_email }),
+    studentConfirm: (code: string) => post<UserMe>("/api/verification/student/confirm", { code }),
+    alumniStart: (grad_year: number, degree: string) => post<{ message: string; simulated_code: string | null; user: UserMe }>("/api/verification/alumni/start", { grad_year, degree }),
+    alumniProof: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return upload<UserMe>("/api/verification/alumni/proof", form);
+    },
+  },
+  dashboard: () => get<Dashboard>("/api/dashboard"),
+  report: (body: { target_type: "user" | "listing"; target_id: string; reason: ReportReason; details: string }) => post<{ id: string; message: string }>("/api/reports", body),
+  moderation: {
+    overview: () => get<ModOverview>("/api/moderation/overview"),
+    restrict: (id: string, reason: string) => post<{ ok: boolean; message: string }>(`/api/moderation/users/${id}/restrict`, { reason }),
+    unrestrict: (id: string) => post<{ ok: boolean; message: string }>(`/api/moderation/users/${id}/unrestrict`),
+    clearFlag: (id: string) => post<{ ok: boolean; message: string }>(`/api/moderation/users/${id}/clear-flag`),
+    resolveReport: (id: string, status: "resolved" | "dismissed", note: string) => post<{ ok: boolean; message: string }>(`/api/moderation/reports/${id}/resolve`, { status, note }),
   },
   rentals: {
     create: (body: { listing_id: string; start_date: string; end_date: string; with_bundle: boolean; note: string }) =>
@@ -578,4 +678,3 @@ export const api = {
   },
 };
 
-export { patch, upload };

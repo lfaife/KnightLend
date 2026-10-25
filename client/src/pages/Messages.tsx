@@ -47,8 +47,8 @@ function MessagesView() {
       {convos.length === 0 ? (
         <Empty icon="chat" title="No conversations yet" body="When you request or lend an item, you can message the other person here." action={<Link to="/browse" className="btn-primary">Browse items</Link>} />
       ) : (
-        <div className="grid gap-4 md:grid-cols-[320px_1fr]">
-          <ul className={`space-y-2 ${active ? "hidden md:block" : ""}`} aria-label="Conversations">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[320px_minmax(0,1fr)]">
+          <ul className={`min-w-0 space-y-2 ${active ? "hidden md:block" : ""}`} aria-label="Conversations">
             {convos.map((c) => (
               <li key={c.rental_id}>
                 <button

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { HoldChip, VerifiedBadge } from "../components/Badges";
+import { ReportButton } from "../components/ReportButton";
 import { CampusMap, MapLegend } from "../components/CampusMap";
 import { Icon } from "../components/Icon";
 import { CostSummary, HoldBox } from "../components/Money";
@@ -339,6 +340,8 @@ function DetailView({ item }: { item: Detail }) {
               </>
             )}
           </section>
+
+          {!item.is_owner && <ReportButton targetType="listing" targetId={item.id} label="Report this listing" />}
 
           <section className="space-y-3">
             <h2 className="text-lg">Cancellation rules</h2>
