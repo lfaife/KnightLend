@@ -27,7 +27,8 @@ EVENTS: dict[str, tuple[set[str], str]] = {
 class IllegalHoldTransition(Exception):
     def __init__(self, status: str, event: str):
         self.status, self.event = status, event
-        super().__init__(f"A {status} hold can't be changed with '{event}'.")
+        article = "An" if status[0] in "aeiou" else "A"
+        super().__init__(f"{article} {status} hold can't {event.replace('_', ' ')}. Refresh the page to see its current state.")
 
 
 class HoldDeclined(Exception):

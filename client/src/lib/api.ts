@@ -119,6 +119,26 @@ export interface Health {
   now: string;
   today: string;
 }
+export interface JobReport {
+  reminders_sent: number;
+  holds_refreshed: number;
+  refreshes_failed: number;
+  rentals_marked_late: number;
+  requests_expired: number;
+}
+export interface ClockOut {
+  now: string;
+  today: string;
+  offset_days: number;
+  jobs: JobReport | null;
+}
+export interface CardIn {
+  number: string;
+  exp_month: number;
+  exp_year: number;
+  cvc: string;
+  name: string;
+}
 export interface DemoUser {
   id: string;
   label: string;
@@ -486,10 +506,20 @@ export const api = {
     list: (role: "borrower" | "lender" | "all" = "all", scope: "active" | "history" | "all" = "all") =>
       get<RentalSummary[]>(`/api/rentals${qs({ role, scope })}`),
     get: (id: string) => get<RentalDetail>(`/api/rentals/${id}`),
+    approve: (id: string, note = "", accept_agreement = true) => post<RentalDetail>(`/api/rentals/${id}/approve`, { note, accept_agreement }),
+    reject: (id: string, note = "") => post<RentalDetail>(`/api/rentals/${id}/reject`, { note }),
+    cancel: (id: string) => post<RentalDetail>(`/api/rentals/${id}/cancel`),
+    acceptAgreement: (id: string) => post<RentalDetail>(`/api/rentals/${id}/agreement/accept`),
+    placeHold: (id: string, card: CardIn) => post<RentalDetail>(`/api/rentals/${id}/hold`, card),
+    setMeetup: (id: string, body: { spot_id: string; date: string; time_of_day: string; notes: string }) => post<RentalDetail>(`/api/rentals/${id}/meetup`, body),
   },
   demo: {
     users: () => get<DemoUser[]>("/api/demo/users"),
     loginAs: (user_id: string) => post<TokenOut>("/api/demo/login-as", { user_id }),
+    clock: () => get<ClockOut>("/api/demo/clock"),
+    advance: (days: number) => post<ClockOut>("/api/demo/advance-time", { days }),
+    runJobs: () => post<ClockOut>("/api/demo/run-jobs"),
+    reset: () => post<ClockOut>("/api/demo/reset"),
   },
 };
 

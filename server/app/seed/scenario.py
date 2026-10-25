@@ -87,6 +87,14 @@ async def accept_and_pay(ctx: Ctx, rental: Rental, at_days: float, card: str = "
         ],
         created_at=rental.created_at,
     )
+    # A hold older than 7 days on a rental that's still open has been refreshed along the way.
+    if hold_status == "active" and rental.status in ("confirmed", "in_progress", "return_pending", "claim_open"):
+        while hold.expires_at <= ctx.now:
+            hold.history.append(HoldEvent(at=hold.expires_at, event="refresh_ok", from_status="active", to_status="active",
+                                          note="Renewed for 7 more days. No charge."))
+            event(rental, hold.expires_at, "hold_refreshed", f"Hold refreshed: ${hold.amount:,.0f} held for 7 more days. No charge.")
+            hold.expires_at += timedelta(days=HOLD_DAYS)
+            hold.refresh_count += 1
     await hold.insert()
     rental.hold_id = hold.id
     rental.payment = Payment(charge_id=f"ch_mock_seed{rental.id}", charged_amount=rental.quote.total, charged_at=at)

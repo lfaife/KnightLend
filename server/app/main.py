@@ -1,14 +1,18 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.db import init_db, state
 from app.models import User
 from app.routers import auth, demo, listings, meta, rentals
+from app.services.holds import IllegalHoldTransition
+from app.services.jobs import run_jobs
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("knightlend")
@@ -25,10 +29,25 @@ async def startup() -> None:
         log.info("DEMO_MODE is off: demo endpoints are disabled.")
 
 
+async def scheduled_jobs() -> None:
+    try:
+        await run_jobs()
+    except Exception:  # noqa: BLE001 - a failed run must not stop the scheduler
+        log.exception("Scheduled job run failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await startup()
+    scheduler = None
+    if settings.scheduler_enabled:
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(scheduled_jobs, "interval", seconds=settings.scheduler_interval_seconds, id="knightlend-jobs")
+        scheduler.start()
+        log.info("Job runner started (every %ss)", settings.scheduler_interval_seconds)
     yield
+    if scheduler:
+        scheduler.shutdown(wait=False)
 
 
 def create_app(use_lifespan: bool = True) -> FastAPI:
@@ -38,6 +57,10 @@ def create_app(use_lifespan: bool = True) -> FastAPI:
         description="Peer-to-peer rentals for the UCF community. Payments, verification and locations are simulated.",
         lifespan=lifespan if use_lifespan else None,
     )
+    @app.exception_handler(IllegalHoldTransition)
+    async def illegal_hold(_: Request, exc: IllegalHoldTransition) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
