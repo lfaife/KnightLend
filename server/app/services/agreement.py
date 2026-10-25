@@ -23,8 +23,7 @@ def build_agreement(listing: Listing, start: date, end: date) -> Agreement:
         f"approved, up to {hold} (the held amount) can be charged to the borrower's card.",
         f"If the item is destroyed or never returned, the borrower may owe its full replacement value ({value}), "
         "even when that is more than the hold.",
-        "Both sides can add before-pickup and after-return condition photos. "
-        "Those photos count as evidence in any claim.",
+        "Both sides can add before-pickup and after-return condition photos. Those photos count as evidence in any claim.",
         "Holds last 7 days. For longer rentals the hold refreshes automatically, with a reminder the day before. "
         "A refresh never charges the borrower.",
         "Cancel more than 24 hours before pickup for a full refund of the rental fee. Within 24 hours, half the "

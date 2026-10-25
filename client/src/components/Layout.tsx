@@ -2,8 +2,10 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { useDemo } from "../context/demo";
 import { DemoBar } from "./DemoBar";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 
 export const NAV = [
   { to: "/", label: "Home", icon: "home", end: true },
@@ -43,6 +45,7 @@ export function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2 md:ml-0">
+            {user && <NotificationBell key={`${user.id}-${tick}`} />}
             {user ? (
               <button onClick={signOut} className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-paper/85 hover:text-paper" aria-label="Sign out">
                 <Icon name="logout" size={18} />
@@ -58,7 +61,9 @@ export function Layout() {
       </header>
 
       <main id="main" className="flex-1">
-        <Outlet key={`${user?.id ?? "anon"}-${tick}`} />
+        <ErrorBoundary key={`${loc.pathname}-${user?.id ?? "anon"}-${tick}`}>
+          <Outlet key={`${user?.id ?? "anon"}-${tick}`} />
+        </ErrorBoundary>
       </main>
 
       <footer className="on-dark hidden bg-ink text-paper/80 md:block">

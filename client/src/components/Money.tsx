@@ -44,7 +44,7 @@ export function HoldBox({ amount, compact = false }: { amount: number; compact?:
 }
 
 /** Charges in bold black on white; the hold on its own gold row so it never reads as a charge. */
-export function CostSummary({ quote, bundleName }: { quote: Quote; bundleName?: string | null }) {
+export function CostSummary({ quote, bundleName, holdLabel }: { quote: Quote; bundleName?: string | null; holdLabel?: string }) {
   return (
     <div className="space-y-3" aria-label="Cost summary">
       <dl className="space-y-1.5 text-sm">
@@ -72,7 +72,7 @@ export function CostSummary({ quote, bundleName }: { quote: Quote; bundleName?: 
         </div>
       </dl>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gold bg-gold-soft px-3 py-2">
-        <span className="text-sm font-semibold">Protection hold</span>
+        <span className="text-sm font-semibold">{holdLabel ?? "Protection hold"}</span>
         <HeldAmount amount={quote.hold_amount} />
       </div>
       <p className="text-xs text-charcoal">No other fees. The hold isn't part of what you pay.</p>

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.db import init_db, state
 from app.models import User
-from app.routers import auth, demo, listings, meta, rentals
+from app.routers import auth, demo, listings, messages, meta, notifications, rentals
 from app.services.holds import IllegalHoldTransition
 from app.services.jobs import run_jobs
 
@@ -57,6 +57,7 @@ def create_app(use_lifespan: bool = True) -> FastAPI:
         description="Peer-to-peer rentals for the UCF community. Payments, verification and locations are simulated.",
         lifespan=lifespan if use_lifespan else None,
     )
+
     @app.exception_handler(IllegalHoldTransition)
     async def illegal_hold(_: Request, exc: IllegalHoldTransition) -> JSONResponse:
         return JSONResponse(status_code=409, content={"detail": str(exc)})
@@ -68,7 +69,7 @@ def create_app(use_lifespan: bool = True) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for router in (meta.router, auth.router, listings.router, rentals.router, demo.router):
+    for router in (meta.router, auth.router, listings.router, rentals.router, messages.router, notifications.router, demo.router):
         app.include_router(router)
 
     settings.upload_dir.mkdir(parents=True, exist_ok=True)

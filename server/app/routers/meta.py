@@ -75,8 +75,13 @@ class Meta(APIModel):
 
 @router.get("/health", response_model=Health)
 async def health() -> Health:
-    return Health(status="ok", database=state.mode, demo_mode=settings.demo_mode,
-                  now=(await clock.now()).isoformat(), today=(await clock.today()).isoformat())
+    return Health(
+        status="ok",
+        database=state.mode,
+        demo_mode=settings.demo_mode,
+        now=(await clock.now()).isoformat(),
+        today=(await clock.today()).isoformat(),
+    )
 
 
 @router.get("/meta", response_model=Meta)
@@ -94,6 +99,7 @@ async def meta() -> Meta:
         times_of_day=[Option(**t) for t in policies.TIMES_OF_DAY],
         return_checklist=policies.RETURN_CHECKLIST,
         service_fee=SERVICE_FEE,
-        test_cards=[TestCardOut(number=c.number, brand=c.brand, funding=c.funding, description=c.description)
-                    for c in TEST_CARDS],
+        test_cards=[
+            TestCardOut(number=c.number, brand=c.brand, funding=c.funding, description=c.description) for c in TEST_CARDS
+        ],
     )

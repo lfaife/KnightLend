@@ -1,11 +1,11 @@
 """Protection hold state machine. Every change goes through `apply`, which rejects illegal moves.
 
-    pending --authorize_ok--> active --refresh_ok--> active
-    pending --authorize_fail--> failed --authorize_ok--> active (new card)
-    active --refresh_fail--> failed
-    active --release--> released      pending/failed --release--> released (nothing was held)
-    active --capture--> captured
-    released and captured are final.
+pending --authorize_ok--> active --refresh_ok--> active
+pending --authorize_fail--> failed --authorize_ok--> active (new card)
+active --refresh_fail--> failed
+active --release--> released      pending/failed --release--> released (nothing was held)
+active --capture--> captured
+released and captured are final.
 """
 
 from datetime import date, datetime
@@ -21,7 +21,6 @@ EVENTS: dict[str, tuple[set[str], str]] = {
     "release": ({"pending", "active", "failed"}, "released"),
     "capture": ({"active"}, "captured"),
 }
-
 
 
 class IllegalHoldTransition(Exception):

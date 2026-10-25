@@ -98,8 +98,14 @@ class MockPaymentProvider:
         year = exp_year + 2000 if exp_year < 100 else exp_year
         if (year, exp_month) < (today.year, today.month):
             raise PaymentError("expired_card", "This card has expired. Use a different card.")
-        return PaymentMethod(token=token_for(card.scenario, digits[-4:]), brand=card.brand, last4=digits[-4:],
-                             funding=card.funding, exp_month=exp_month, exp_year=year)
+        return PaymentMethod(
+            token=token_for(card.scenario, digits[-4:]),
+            brand=card.brand,
+            last4=digits[-4:],
+            funding=card.funding,
+            exp_month=exp_month,
+            exp_year=year,
+        )
 
     def _check(self, token: str, refresh: bool = False) -> None:
         scenario = scenario_of(token)
@@ -112,13 +118,11 @@ class MockPaymentProvider:
 
     async def authorize_hold(self, token: str, amount: float, now: datetime) -> Authorization:
         self._check(token)
-        return Authorization(id=f"pi_mock_{secrets.token_hex(8)}", amount=amount,
-                             expires_at=now + timedelta(days=HOLD_DAYS))
+        return Authorization(id=f"pi_mock_{secrets.token_hex(8)}", amount=amount, expires_at=now + timedelta(days=HOLD_DAYS))
 
     async def refresh_hold(self, token: str, authorization_id: str, amount: float, now: datetime) -> Authorization:
         self._check(token, refresh=True)
-        return Authorization(id=f"pi_mock_{secrets.token_hex(8)}", amount=amount,
-                             expires_at=now + timedelta(days=HOLD_DAYS))
+        return Authorization(id=f"pi_mock_{secrets.token_hex(8)}", amount=amount, expires_at=now + timedelta(days=HOLD_DAYS))
 
     async def release_hold(self, authorization_id: str) -> None:
         return None

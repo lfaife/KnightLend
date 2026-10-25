@@ -139,6 +139,37 @@ export interface CardIn {
   cvc: string;
   name: string;
 }
+export interface Message {
+  id: string;
+  rental_id: string;
+  sender_id: string | null;
+  sender_name: string;
+  mine: boolean;
+  body: string;
+  redacted: boolean;
+  created_at: string;
+}
+export interface Conversation {
+  rental_id: string;
+  listing_title: string;
+  listing_photo: string | null;
+  other_party: UserPublic;
+  status: RentalStatus;
+  status_label: string;
+  last_message: string | null;
+  last_at: string | null;
+  unread: number;
+}
+export interface Notification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  rental_id: string | null;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+}
 export interface DemoUser {
   id: string;
   label: string;
@@ -512,6 +543,30 @@ export const api = {
     acceptAgreement: (id: string) => post<RentalDetail>(`/api/rentals/${id}/agreement/accept`),
     placeHold: (id: string, card: CardIn) => post<RentalDetail>(`/api/rentals/${id}/hold`, card),
     setMeetup: (id: string, body: { spot_id: string; date: string; time_of_day: string; notes: string }) => post<RentalDetail>(`/api/rentals/${id}/meetup`, body),
+    uploadPhotos: (id: string, phase: "pickup" | "return" | "claim", note: string, files: File[]) => {
+      const form = new FormData();
+      form.append("phase", phase);
+      form.append("note", note);
+      files.forEach((f) => form.append("files", f));
+      return upload<RentalDetail>(`/api/rentals/${id}/photos`, form);
+    },
+    confirmPhotos: (id: string, setId: string) => post<RentalDetail>(`/api/rentals/${id}/photos/${setId}/confirm`),
+    pickup: (id: string) => post<RentalDetail>(`/api/rentals/${id}/pickup`),
+    markReturned: (id: string, checklist: string[]) => post<RentalDetail>(`/api/rentals/${id}/return`, { checklist }),
+    confirmClean: (id: string) => post<RentalDetail>(`/api/rentals/${id}/inspect`),
+    fileClaim: (id: string, body: { type: string; amount: number; description: string }) => post<RentalDetail>(`/api/rentals/${id}/claim`, body),
+    respondClaim: (id: string, response: "accept" | "dispute", message: string) => post<RentalDetail>(`/api/rentals/${id}/claim/respond`, { response, message }),
+    resolveClaim: (id: string, decision: "release" | "capture", amount: number, explanation: string) =>
+      post<RentalDetail>(`/api/rentals/${id}/claim/resolve`, { decision, amount, explanation }),
+    review: (id: string, rating: number, text: string) => post<RentalDetail>(`/api/rentals/${id}/reviews`, { rating, text }),
+    messages: (id: string) => get<Message[]>(`/api/rentals/${id}/messages`),
+    send: (id: string, body: string) => post<Message>(`/api/rentals/${id}/messages`, { body }),
+  },
+  conversations: () => get<Conversation[]>("/api/conversations"),
+  notifications: {
+    list: () => get<{ items: Notification[]; unread: number }>("/api/notifications"),
+    readAll: () => post<{ ok: boolean }>("/api/notifications/read-all"),
+    read: (id: string) => post<{ ok: boolean }>(`/api/notifications/${id}/read`),
   },
   demo: {
     users: () => get<DemoUser[]>("/api/demo/users"),

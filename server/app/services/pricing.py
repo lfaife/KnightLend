@@ -62,8 +62,12 @@ def best_plan(prices: Prices, days: int) -> list[QuoteLine]:
         if name in counts:
             unit_price = getattr(prices, name)
             lines.append(
-                QuoteLine(label=UNIT_LABEL[name], quantity=counts[name], unit_price=unit_price,
-                          amount=round(unit_price * counts[name], 2))
+                QuoteLine(
+                    label=UNIT_LABEL[name],
+                    quantity=counts[name],
+                    unit_price=unit_price,
+                    amount=round(unit_price * counts[name], 2),
+                )
             )
     return lines
 

@@ -241,8 +241,12 @@ function RentalView() {
 
       <RentalExtras r={r} act={act} today={today} />
 
-      <Section title="Cost summary">
-        <CostSummary quote={r.quote} bundleName={r.bundle_name} />
+      <Section title="Cost summary at booking">
+        <CostSummary
+          quote={r.quote}
+          bundleName={r.bundle_name}
+          holdLabel={r.hold && ["released", "captured"].includes(r.hold.status) ? "Protection hold at booking (see above for what happened)" : undefined}
+        />
       </Section>
 
       {!has("accept_agreement") && !has("approve") && (

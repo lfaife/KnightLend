@@ -57,8 +57,12 @@ class ClockOut(APIModel):
 
 async def _clock_out(jobs: JobReport | None = None) -> ClockOut:
     c = await clock.get_clock()
-    return ClockOut(now=(await clock.now()).isoformat(), today=(await clock.today()).isoformat(),
-                    offset_days=round(c.offset_seconds / 86400, 2), jobs=jobs)
+    return ClockOut(
+        now=(await clock.now()).isoformat(),
+        today=(await clock.today()).isoformat(),
+        offset_days=round(c.offset_seconds / 86400, 2),
+        jobs=jobs,
+    )
 
 
 @router.get("/clock", response_model=ClockOut)

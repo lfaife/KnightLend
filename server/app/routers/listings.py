@@ -123,15 +123,21 @@ async def search_listings(
     total = len(results)
     chunk = results[(page - 1) * page_size : page * page_size]
     items = [svc.card(x, owners[x.owner_id], d) for x, d, _ in chunk]
-    return ListingPage(items=items, total=total, page=page, page_size=page_size,
-                       pages=max(1, ceil(total / page_size)), origin_label=origin_label)
+    return ListingPage(
+        items=items, total=total, page=page, page_size=page_size, pages=max(1, ceil(total / page_size)), origin_label=origin_label
+    )
 
 
 @router.get("/hold-suggestion", response_model=HoldSuggestion)
 async def hold_suggestion(value: float = Query(gt=0, le=10000)) -> HoldSuggestion:
     tier = hold_tier(value)
-    return HoldSuggestion(estimated_value=value, suggested=suggest_hold(value), min_hold=tier["min_hold"],
-                          max_hold=tier["max_hold"], tier_label=tier["label"])
+    return HoldSuggestion(
+        estimated_value=value,
+        suggested=suggest_hold(value),
+        min_hold=tier["min_hold"],
+        max_hold=tier["max_hold"],
+        tier_label=tier["label"],
+    )
 
 
 @router.get("/saved", response_model=list[ListingCard])
@@ -147,23 +153,47 @@ async def listing_detail(listing_id: PydanticObjectId, user: User | None = Depen
     owner = await User.get(x.owner_id)
     if owner is None:
         raise HTTPException(404, "That listing isn't available.")
-    owner_reviews = await Review.find(Review.subject_id == owner.id, Review.subject_role == "lender") \
-        .sort(-Review.created_at).limit(4).to_list()
-    listing_reviews = await Review.find(Review.listing_id == x.id, Review.subject_role == "lender") \
-        .sort(-Review.created_at).limit(4).to_list()
+    owner_reviews = (
+        await Review.find(Review.subject_id == owner.id, Review.subject_role == "lender")
+        .sort(-Review.created_at)
+        .limit(4)
+        .to_list()
+    )
+    listing_reviews = (
+        await Review.find(Review.listing_id == x.id, Review.subject_role == "lender").sort(-Review.created_at).limit(4).to_list()
+    )
     lat, lng = (user.home_lat, user.home_lng) if user else (DEFAULT_ORIGIN["lat"], DEFAULT_ORIGIN["lng"])
     return ListingDetail(
-        id=x.id, title=x.title, description=x.description, category=x.category, tags=x.tags,
-        specs=[SpecOut(**s.model_dump()) for s in x.specs], condition=x.condition, condition_notes=x.condition_notes,
-        estimated_value=x.estimated_value, prices=PricesOut(**x.prices.model_dump()),
-        bundle=BundleOut(**x.bundle.model_dump()) if x.bundle else None, hold_amount=x.hold_amount,
-        max_rental_days=x.max_rental_days, usage_guide=x.usage_guide, sanitized=x.sanitized,
-        sanitized_note=x.sanitized_note, pickup=PickupOut(**x.pickup.model_dump()),
-        requires_approval=x.requires_approval, photos=x.photos, status=x.status, rating_avg=x.rating_avg,
-        rating_count=x.rating_count, rentals_count=x.rentals_count, owner=svc.owner_snippet(owner),
-        owner_reviews=await svc.reviews_out(owner_reviews), listing_reviews=await svc.reviews_out(listing_reviews),
-        booked=await svc.booked_ranges(x.id), distance_miles=round(svc.distance_from(x, lat, lng), 1),
-        is_owner=bool(user and user.id == x.owner_id), saved=bool(user and x.id in user.saved_listing_ids),
+        id=x.id,
+        title=x.title,
+        description=x.description,
+        category=x.category,
+        tags=x.tags,
+        specs=[SpecOut(**s.model_dump()) for s in x.specs],
+        condition=x.condition,
+        condition_notes=x.condition_notes,
+        estimated_value=x.estimated_value,
+        prices=PricesOut(**x.prices.model_dump()),
+        bundle=BundleOut(**x.bundle.model_dump()) if x.bundle else None,
+        hold_amount=x.hold_amount,
+        max_rental_days=x.max_rental_days,
+        usage_guide=x.usage_guide,
+        sanitized=x.sanitized,
+        sanitized_note=x.sanitized_note,
+        pickup=PickupOut(**x.pickup.model_dump()),
+        requires_approval=x.requires_approval,
+        photos=x.photos,
+        status=x.status,
+        rating_avg=x.rating_avg,
+        rating_count=x.rating_count,
+        rentals_count=x.rentals_count,
+        owner=svc.owner_snippet(owner),
+        owner_reviews=await svc.reviews_out(owner_reviews),
+        listing_reviews=await svc.reviews_out(listing_reviews),
+        booked=await svc.booked_ranges(x.id),
+        distance_miles=round(svc.distance_from(x, lat, lng), 1),
+        is_owner=bool(user and user.id == x.owner_id),
+        saved=bool(user and x.id in user.saved_listing_ids),
         created_at=x.created_at,
     )
 
@@ -189,8 +219,14 @@ async def check_dates(x: Listing, start: date, end: date, with_bundle: bool) -> 
             f"This rental costs {round(quote.value_ratio * 100)}% of the item's value (${x.estimated_value:,.0f}). "
             "If you'll need it again, buying might be cheaper."
         )
-    return QuoteCheck(start=start, end=end, quote=QuoteOut(**quote.model_dump()) if quote else None,
-                      available=not problems, problems=problems, warnings=warnings)
+    return QuoteCheck(
+        start=start,
+        end=end,
+        quote=QuoteOut(**quote.model_dump()) if quote else None,
+        available=not problems,
+        problems=problems,
+        warnings=warnings,
+    )
 
 
 @router.get("/{listing_id}/quote", response_model=QuoteCheck)

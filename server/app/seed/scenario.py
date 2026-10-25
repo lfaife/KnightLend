@@ -36,8 +36,17 @@ class Ctx:
         return self.today + timedelta(days=days)
 
 
-async def make_rental(ctx: Ctx, listing_slug: str, borrower: str, start: int, days: int, status: str,
-                      created: int, note: str = "", with_bundle: bool = False) -> Rental:
+async def make_rental(
+    ctx: Ctx,
+    listing_slug: str,
+    borrower: str,
+    start: int,
+    days: int,
+    status: str,
+    created: int,
+    note: str = "",
+    with_bundle: bool = False,
+) -> Rental:
     listing = ctx.listings[listing_slug]
     s, e = ctx.day(start), ctx.day(start + days)
     agreement = build_agreement(listing, s, e)
@@ -64,8 +73,9 @@ def event(rental: Rental, at: datetime, kind: str, text: str) -> None:
     rental.timeline.append(TimelineEvent(at=at, kind=kind, text=text))
 
 
-async def accept_and_pay(ctx: Ctx, rental: Rental, at_days: float, card: str = "visa",
-                         hold_status: str = "active", expires_in: float | None = None) -> Hold:
+async def accept_and_pay(
+    ctx: Ctx, rental: Rental, at_days: float, card: str = "visa", hold_status: str = "active", expires_in: float | None = None
+) -> Hold:
     """Both sides accept, the hold is placed and the rental is charged."""
     at = ctx.at(at_days)
     rental.agreement.lender_accepted_at = at - timedelta(hours=2)
@@ -82,7 +92,9 @@ async def accept_and_pay(ctx: Ctx, rental: Rental, at_days: float, card: str = "
         placed_at=at,
         expires_at=(ctx.now + timedelta(days=expires_in)) if expires_in is not None else at + timedelta(days=HOLD_DAYS),
         history=[
-            HoldEvent(at=rental.created_at, event="created", from_status="pending", to_status="pending", note="Waiting for approval"),
+            HoldEvent(
+                at=rental.created_at, event="created", from_status="pending", to_status="pending", note="Waiting for approval"
+            ),
             HoldEvent(at=at, event="authorize_ok", from_status="pending", to_status="active", note=f"{brand} ending {last4}"),
         ],
         created_at=rental.created_at,
@@ -90,9 +102,18 @@ async def accept_and_pay(ctx: Ctx, rental: Rental, at_days: float, card: str = "
     # A hold older than 7 days on a rental that's still open has been refreshed along the way.
     if hold_status == "active" and rental.status in ("confirmed", "in_progress", "return_pending", "claim_open"):
         while hold.expires_at <= ctx.now:
-            hold.history.append(HoldEvent(at=hold.expires_at, event="refresh_ok", from_status="active", to_status="active",
-                                          note="Renewed for 7 more days. No charge."))
-            event(rental, hold.expires_at, "hold_refreshed", f"Hold refreshed: ${hold.amount:,.0f} held for 7 more days. No charge.")
+            hold.history.append(
+                HoldEvent(
+                    at=hold.expires_at,
+                    event="refresh_ok",
+                    from_status="active",
+                    to_status="active",
+                    note="Renewed for 7 more days. No charge.",
+                )
+            )
+            event(
+                rental, hold.expires_at, "hold_refreshed", f"Hold refreshed: ${hold.amount:,.0f} held for 7 more days. No charge."
+            )
             hold.expires_at += timedelta(days=HOLD_DAYS)
             hold.refresh_count += 1
     await hold.insert()
@@ -105,17 +126,30 @@ async def accept_and_pay(ctx: Ctx, rental: Rental, at_days: float, card: str = "
 
 def set_meetup(ctx: Ctx, rental: Rental, spot_id: str, start_days: int, time_of_day: str, by: str) -> None:
     s = spot(spot_id)
-    rental.meetup = Meetup(spot_id=spot_id, spot_name=s["name"], lat=s["lat"], lng=s["lng"],
-                           date=ctx.day(start_days).isoformat(), time_of_day=time_of_day,
-                           accessibility_note=s["accessibility"], set_by=ctx.users[by].id, set_at=ctx.now - timedelta(days=1))
+    rental.meetup = Meetup(
+        spot_id=spot_id,
+        spot_name=s["name"],
+        lat=s["lat"],
+        lng=s["lng"],
+        date=ctx.day(start_days).isoformat(),
+        time_of_day=time_of_day,
+        accessibility_note=s["accessibility"],
+        set_by=ctx.users[by].id,
+        set_at=ctx.now - timedelta(days=1),
+    )
 
 
-async def photos(ctx: Ctx, rental: Rental, slug: str, phase: str, who: str, role: str, at_days: float,
-                 confirmed_by: str | None, note: str = "") -> ConditionPhotoSet:
+async def photos(
+    ctx: Ctx, rental: Rental, slug: str, phase: str, who: str, role: str, at_days: float, confirmed_by: str | None, note: str = ""
+) -> ConditionPhotoSet:
     img = condition_url(slug, "pickup" if phase == "pickup" else "return")
     ps = ConditionPhotoSet(
-        rental_id=rental.id, phase=phase, uploaded_by=ctx.users[who].id, uploader_role=role,
-        photos=[img, f"/seed-images/{slug}-1.svg"], note=note,
+        rental_id=rental.id,
+        phase=phase,
+        uploaded_by=ctx.users[who].id,
+        uploader_role=role,
+        photos=[img, f"/seed-images/{slug}-1.svg"],
+        note=note,
         confirmed_by=ctx.users[confirmed_by].id if confirmed_by else None,
         confirmed_at=ctx.at(at_days, 16) if confirmed_by else None,
         created_at=ctx.at(at_days),
@@ -126,14 +160,22 @@ async def photos(ctx: Ctx, rental: Rental, slug: str, phase: str, who: str, role
 
 async def say(ctx: Ctx, rental: Rental, who: str | None, days: float, body: str, hour: int = 15) -> None:
     sender = ctx.users[who].id if who else None
-    await Message(rental_id=rental.id, sender_id=sender, body=body, created_at=ctx.at(days, hour),
-                  read_by=[sender] if sender else []).insert()
+    await Message(
+        rental_id=rental.id, sender_id=sender, body=body, created_at=ctx.at(days, hour), read_by=[sender] if sender else []
+    ).insert()
 
 
 async def review(ctx: Ctx, rental: Rental, author: str, subject: str, role: str, rating: int, text: str, days: float) -> None:
-    await Review(rental_id=rental.id, listing_id=rental.listing_id, author_id=ctx.users[author].id,
-                 subject_id=ctx.users[subject].id, subject_role=role, rating=rating, text=text,
-                 created_at=ctx.at(days)).insert()
+    await Review(
+        rental_id=rental.id,
+        listing_id=rental.listing_id,
+        author_id=ctx.users[author].id,
+        subject_id=ctx.users[subject].id,
+        subject_role=role,
+        rating=rating,
+        text=text,
+        created_at=ctx.at(days),
+    ).insert()
 
 
 def release(hold: Hold, at: datetime, note: str = "Clean return") -> None:
@@ -151,32 +193,65 @@ async def seed_scenarios(ctx: Ctx) -> int:
     count = 0
 
     # 1. Requested: Ellie asks Leo for the GoPro.
-    r = await make_rental(ctx, "gopro-hero11", "ellie", 3, 3, "requested", -0.2,
-                          note="Hi Leo! I need this for a FIL project shoot at the lake. I'll keep it in the case.")
-    await Hold(rental_id=r.id, borrower_id=r.borrower_id, amount=r.quote.hold_amount, status="pending",
-               created_at=r.created_at,
-               history=[HoldEvent(at=r.created_at, event="created", from_status="pending", to_status="pending",
-                                  note="Waiting for approval")]).insert()
+    r = await make_rental(
+        ctx,
+        "gopro-hero11",
+        "ellie",
+        3,
+        3,
+        "requested",
+        -0.2,
+        note="Hi Leo! I need this for a FIL project shoot at the lake. I'll keep it in the case.",
+    )
+    await Hold(
+        rental_id=r.id,
+        borrower_id=r.borrower_id,
+        amount=r.quote.hold_amount,
+        status="pending",
+        created_at=r.created_at,
+        history=[
+            HoldEvent(at=r.created_at, event="created", from_status="pending", to_status="pending", note="Waiting for approval")
+        ],
+    ).insert()
     await say(ctx, r, "ellie", -0.2, "Hi Leo! I need this for a FIL project shoot at the lake. I'll keep it in the case.")
-    await Notification(user_id=U["leo"].id, kind="request", title="New request: GoPro HERO11 Black Action Camera Kit",
-                       body="Ellie Martinez wants it for 3 days.", rental_id=r.id, link=f"/rentals/{r.id}",
-                       created_at=ctx.at(-0.2)).insert()
+    await Notification(
+        user_id=U["leo"].id,
+        kind="request",
+        title="New request: GoPro HERO11 Black Action Camera Kit",
+        body="Ellie Martinez wants it for 3 days.",
+        rental_id=r.id,
+        link=f"/rentals/{r.id}",
+        created_at=ctx.at(-0.2),
+    ).insert()
     count += 1
 
     # 2. Approved: Kurt approved the drill. Ellie still needs to accept the agreement and place the hold.
     r = await make_rental(ctx, "dewalt-drill", "ellie", 2, 2, "approved", -1, note="Putting up shelves in my dorm.")
     r.agreement.lender_accepted_at = ctx.at(-0.5)
     event(r, ctx.at(-0.5), "approved", "Lender approved the request")
-    h = Hold(rental_id=r.id, borrower_id=r.borrower_id, amount=r.quote.hold_amount, status="pending", created_at=r.created_at,
-             history=[HoldEvent(at=r.created_at, event="created", from_status="pending", to_status="pending",
-                                note="Waiting for approval")])
+    h = Hold(
+        rental_id=r.id,
+        borrower_id=r.borrower_id,
+        amount=r.quote.hold_amount,
+        status="pending",
+        created_at=r.created_at,
+        history=[
+            HoldEvent(at=r.created_at, event="created", from_status="pending", to_status="pending", note="Waiting for approval")
+        ],
+    )
     await h.insert()
     r.hold_id = h.id
     await r.save()
     await say(ctx, r, "kurt", -0.5, "Approved. Garage A works for me. I'll bring the bit set too if you add it.")
-    await Notification(user_id=U["ellie"].id, kind="approved", title="Kurt approved your request",
-                       body="Accept the agreement and place the protection hold to confirm.", rental_id=r.id,
-                       link=f"/rentals/{r.id}", created_at=ctx.at(-0.5)).insert()
+    await Notification(
+        user_id=U["ellie"].id,
+        kind="approved",
+        title="Kurt approved your request",
+        body="Accept the agreement and place the protection hold to confirm.",
+        rental_id=r.id,
+        link=f"/rentals/{r.id}",
+        created_at=ctx.at(-0.5),
+    ).insert()
     count += 1
 
     # 3. Confirmed (hold active, waiting for pickup): Ellie and Priya's Copic markers.
@@ -226,11 +301,27 @@ async def seed_scenarios(ctx: Ctx) -> int:
     event(r, ctx.at(-16), "hold_released", "Hold released: $10")
     r.borrower_reviewed = r.lender_reviewed = True
     await r.save()
-    await review(ctx, r, "ellie", "dana", "lender", 5, "Calculator was spotless and Dana showed me the TVM shortcuts. Got me through my FIN exam.", -16)
+    await review(
+        ctx,
+        r,
+        "ellie",
+        "dana",
+        "lender",
+        5,
+        "Calculator was spotless and Dana showed me the TVM shortcuts. Got me through my FIN exam.",
+        -16,
+    )
     await review(ctx, r, "dana", "ellie", "borrower", 5, "On time and returned it reset. Easy rental.", -16)
-    await Notification(user_id=U["ellie"].id, kind="hold_released", title="Your $10 hold has been released",
-                       body="TI BA II Plus came back in the same condition.", rental_id=r.id, link=f"/rentals/{r.id}",
-                       read=True, created_at=ctx.at(-16)).insert()
+    await Notification(
+        user_id=U["ellie"].id,
+        kind="hold_released",
+        title="Your $10 hold has been released",
+        body="TI BA II Plus came back in the same condition.",
+        rental_id=r.id,
+        link=f"/rentals/{r.id}",
+        read=True,
+        created_at=ctx.at(-16),
+    ).insert()
     count += 1
 
     # 7. Returned, waiting for Leo to check it: Jordan returned the DSLR today.
@@ -244,9 +335,15 @@ async def seed_scenarios(ctx: Ctx) -> int:
     event(r, r.returned_at, "returned", "Item returned. Lender is checking it.")
     await r.save()
     await say(ctx, r, "jordan", 0, "Dropped it off at the courtyard bench with you. Thanks again!", 13)
-    await Notification(user_id=U["leo"].id, kind="returned", title="Jordan returned the Canon EOS Rebel T7",
-                       body="Check it and confirm a clean return, or file a claim.", rental_id=r.id, link=f"/rentals/{r.id}",
-                       created_at=ctx.at(0, 13)).insert()
+    await Notification(
+        user_id=U["leo"].id,
+        kind="returned",
+        title="Jordan returned the Canon EOS Rebel T7",
+        body="Check it and confirm a clean return, or file a claim.",
+        rental_id=r.id,
+        link=f"/rentals/{r.id}",
+        created_at=ctx.at(0, 13),
+    ).insert()
     count += 1
 
     # 8. Damage claim open, waiting for Ellie's response: Rafael's audio kit.
@@ -255,18 +352,36 @@ async def seed_scenarios(ctx: Ctx) -> int:
     r.picked_up_at, r.returned_at = ctx.at(-6), ctx.at(-2)
     await photos(ctx, r, "rode-audio", "pickup", "ellie", "borrower", -6, "rafael")
     await photos(ctx, r, "rode-audio", "return", "ellie", "borrower", -2, "rafael")
-    claim_photos = await photos(ctx, r, "rode-audio", "claim", "rafael", "lender", -1, None,
-                                "Receiver clip is cracked and one foam cover is torn.")
-    r.claim = Claim(type="damage", amount=25, description="The receiver's belt clip is cracked and one foam windscreen is torn. Replacement parts cost $25.",
-                    photo_set_id=claim_photos.id, filed_at=ctx.at(-1))
+    claim_photos = await photos(
+        ctx, r, "rode-audio", "claim", "rafael", "lender", -1, None, "Receiver clip is cracked and one foam cover is torn."
+    )
+    r.claim = Claim(
+        type="damage",
+        amount=25,
+        description="The receiver's belt clip is cracked and one foam windscreen is torn. Replacement parts cost $25.",
+        photo_set_id=claim_photos.id,
+        filed_at=ctx.at(-1),
+    )
     event(r, r.picked_up_at, "picked_up", "Item picked up")
     event(r, r.returned_at, "returned", "Item returned")
     event(r, ctx.at(-1), "claim_filed", "Lender filed a damage claim for $25")
     await r.save()
-    await say(ctx, r, "rafael", -1, "Hey Ellie, the clip on the receiver came back cracked. I filed a claim for the part. Let me know if you saw it happen.")
-    await Notification(user_id=U["ellie"].id, kind="claim", title="Rafael filed a $25 damage claim",
-                       body="Your $40 hold is still held, not charged. Respond to the claim.", rental_id=r.id,
-                       link=f"/rentals/{r.id}", created_at=ctx.at(-1)).insert()
+    await say(
+        ctx,
+        r,
+        "rafael",
+        -1,
+        "Hey Ellie, the clip on the receiver came back cracked. I filed a claim for the part. Let me know if you saw it happen.",
+    )
+    await Notification(
+        user_id=U["ellie"].id,
+        kind="claim",
+        title="Rafael filed a $25 damage claim",
+        body="Your $40 hold is still held, not charged. Respond to the claim.",
+        rental_id=r.id,
+        link=f"/rentals/{r.id}",
+        created_at=ctx.at(-1),
+    ).insert()
     count += 1
 
     # 9. Hold captured after a late return: Jordan and Kurt's sander.
@@ -276,11 +391,19 @@ async def seed_scenarios(ctx: Ctx) -> int:
     r.late, r.late_days = True, 2
     await photos(ctx, r, "ryobi-sander", "pickup", "kurt", "lender", -15, "jordan")
     await photos(ctx, r, "ryobi-sander", "return", "kurt", "lender", -10, None)
-    r.claim = Claim(type="late", amount=10, description="Returned 2 days late. Asking for 2 extra days at $5 per day.",
-                    filed_at=ctx.at(-9.5), status="resolved", borrower_response="accept", responded_at=ctx.at(-9),
-                    decision="capture", decision_amount=10,
-                    explanation="Jordan accepted the late-return claim. $10 of the $25 hold was charged and $15 was released.",
-                    resolved_at=ctx.at(-9))
+    r.claim = Claim(
+        type="late",
+        amount=10,
+        description="Returned 2 days late. Asking for 2 extra days at $5 per day.",
+        filed_at=ctx.at(-9.5),
+        status="resolved",
+        borrower_response="accept",
+        responded_at=ctx.at(-9),
+        decision="capture",
+        decision_amount=10,
+        explanation="Jordan accepted the late-return claim. $10 of the $25 hold was charged and $15 was released.",
+        resolved_at=ctx.at(-9),
+    )
     capture(h, ctx.at(-9), 10, "Late return claim accepted")
     await h.save()
     r.payment.claim_charge_id, r.payment.claim_charged_amount = f"ch_mock_seedclaim{r.id}", 10
@@ -297,21 +420,36 @@ async def seed_scenarios(ctx: Ctx) -> int:
     r = await make_rental(ctx, "carpet-cleaner", "marcus", -9, 2, "claim_open", -10)
     await accept_and_pay(ctx, r, -9.2)
     r.picked_up_at, r.returned_at = ctx.at(-9), ctx.at(-7)
-    await photos(ctx, r, "carpet-cleaner", "pickup", "marcus", "borrower", -9, "dana", "Small crack on the tank handle already there.")
+    await photos(
+        ctx, r, "carpet-cleaner", "pickup", "marcus", "borrower", -9, "dana", "Small crack on the tank handle already there."
+    )
     await photos(ctx, r, "carpet-cleaner", "return", "marcus", "borrower", -7, "dana")
     cp = await photos(ctx, r, "carpet-cleaner", "claim", "dana", "lender", -6.5, None, "Tank handle is cracked.")
-    r.claim = Claim(type="damage", amount=30, description="The clean water tank handle is cracked. A new tank is $30.",
-                    photo_set_id=cp.id, filed_at=ctx.at(-6.5), status="under_review", borrower_response="dispute",
-                    borrower_message="That crack is in my pickup photos and I mentioned it in the note at pickup.",
-                    responded_at=ctx.at(-6))
+    r.claim = Claim(
+        type="damage",
+        amount=30,
+        description="The clean water tank handle is cracked. A new tank is $30.",
+        photo_set_id=cp.id,
+        filed_at=ctx.at(-6.5),
+        status="under_review",
+        borrower_response="dispute",
+        borrower_message="That crack is in my pickup photos and I mentioned it in the note at pickup.",
+        responded_at=ctx.at(-6),
+    )
     event(r, r.picked_up_at, "picked_up", "Item picked up")
     event(r, r.returned_at, "returned", "Item returned")
     event(r, ctx.at(-6.5), "claim_filed", "Lender filed a damage claim for $30")
     event(r, ctx.at(-6), "claim_disputed", "Borrower disputed the claim. A moderator will review it.")
     await r.save()
-    await Notification(user_id=U["mod"].id, kind="dispute", title="Dispute needs review: carpet cleaner",
-                       body="Marcus disputed Dana's $30 damage claim.", rental_id=r.id, link="/moderation",
-                       created_at=ctx.at(-6)).insert()
+    await Notification(
+        user_id=U["mod"].id,
+        kind="dispute",
+        title="Dispute needs review: carpet cleaner",
+        body="Marcus disputed Dana's $30 damage claim.",
+        rental_id=r.id,
+        link="/moderation",
+        created_at=ctx.at(-6),
+    ).insert()
     count += 1
 
     count += await seed_history(ctx)
@@ -319,12 +457,17 @@ async def seed_scenarios(ctx: Ctx) -> int:
 
 
 GOOD_LENDER = [
-    "Exactly as described and super easy pickup.", "Clean, charged and ready to go.", "Great communication, would rent again.",
-    "Saved me from buying one for a single project.", "Showed me how to use it at pickup. Very helpful.",
+    "Exactly as described and super easy pickup.",
+    "Clean, charged and ready to go.",
+    "Great communication, would rent again.",
+    "Saved me from buying one for a single project.",
+    "Showed me how to use it at pickup. Very helpful.",
 ]
 GOOD_BORROWER = [
-    "Returned on time and in the same condition.", "Easy to coordinate with. Took good care of it.",
-    "Friendly and on time.", "Returned it cleaner than I lent it.",
+    "Returned on time and in the same condition.",
+    "Easy to coordinate with. Took good care of it.",
+    "Friendly and on time.",
+    "Returned it cleaner than I lent it.",
 ]
 
 

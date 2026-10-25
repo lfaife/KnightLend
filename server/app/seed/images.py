@@ -57,9 +57,9 @@ def cover_svg(title: str, category: str) -> str:
         f'<rect width="800" height="600" fill="{BLACK}"/>'
         f'<rect x="40" y="40" width="720" height="520" rx="28" fill="{GOLD}"/>'
         f'<rect x="40" y="440" width="720" height="120" rx="0" fill="{BLACK}" opacity="0.92"/>'
-        f'{_text_block(lines, 80, 140, 52, BLACK)}'
-        f'{_text_block([CATEGORY_LABEL.get(category, "")], 80, 512, 26, GOLD, 600)}'
-        f'{_mark(660, 470, GOLD, BLACK)}'
+        f"{_text_block(lines, 80, 140, 52, BLACK)}"
+        f"{_text_block([CATEGORY_LABEL.get(category, '')], 80, 512, 26, GOLD, 600)}"
+        f"{_mark(660, 470, GOLD, BLACK)}"
         "</svg>"
     )
 
@@ -74,9 +74,9 @@ def detail_svg(title: str, specs: list[tuple[str, str]]) -> str:
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">'
         f'<rect width="800" height="600" fill="{BLACK}"/>'
         f'<rect x="0" y="0" width="800" height="150" fill="{GOLD}"/>'
-        f'{_text_block(_wrap(title, 34)[:2], 80, 70, 34, BLACK)}'
+        f"{_text_block(_wrap(title, 34)[:2], 80, 70, 34, BLACK)}"
         f"{rows}"
-        f'{_mark(680, 500, GOLD, BLACK)}'
+        f"{_mark(680, 500, GOLD, BLACK)}"
         "</svg>"
     )
 
@@ -86,8 +86,8 @@ def condition_svg(title: str, caption: str) -> str:
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">'
         f'<rect width="800" height="600" fill="{GOLD}"/>'
         f'<rect x="60" y="60" width="680" height="400" rx="20" fill="{BLACK}"/>'
-        f'{_text_block(_wrap(title, 26)[:3], 100, 170, 40, GOLD)}'
-        f'{_text_block([caption], 60, 530, 30, BLACK, 700)}'
+        f"{_text_block(_wrap(title, 26)[:3], 100, 170, 40, GOLD)}"
+        f"{_text_block([caption], 60, 530, 30, BLACK, 700)}"
         "</svg>"
     )
 

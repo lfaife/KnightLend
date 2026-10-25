@@ -8,12 +8,30 @@ CANCELLATION_RULES = [
 ]
 
 SHORTCUTS = [
-    {"id": "finance", "label": "Finance calculators", "hint": "FIN 3403, ACG 2021", "category": "calculators_electronics", "tag": "Finance"},
+    {
+        "id": "finance",
+        "label": "Finance calculators",
+        "hint": "FIN 3403, ACG 2021",
+        "category": "calculators_electronics",
+        "tag": "Finance",
+    },
     {"id": "art", "label": "Art supplies", "hint": "Markers, paints, pencils", "category": "art_supplies", "tag": None},
     {"id": "film", "label": "Film/Media gear", "hint": "Cameras, lights, audio", "category": "cameras_media", "tag": None},
-    {"id": "stem", "label": "Math and science", "hint": "MAC 2311, STA 2023", "category": "calculators_electronics", "tag": "Calculus"},
+    {
+        "id": "stem",
+        "label": "Math and science",
+        "hint": "MAC 2311, STA 2023",
+        "category": "calculators_electronics",
+        "tag": "Calculus",
+    },
     {"id": "senior-design", "label": "Senior design builds", "hint": "Drills, sanders, levels", "category": "tools", "tag": None},
-    {"id": "career", "label": "Career fair and formal", "hint": "Suits, dresses, gowns", "category": "clothing_events", "tag": None},
+    {
+        "id": "career",
+        "label": "Career fair and formal",
+        "hint": "Suits, dresses, gowns",
+        "category": "clothing_events",
+        "tag": None,
+    },
 ]
 
 CATEGORIES = [
@@ -45,3 +63,4 @@ RETURN_CHECKLIST = [
     "Reset or wiped (calculators and electronics)",
     "Return photos added",
 ]
+REQUIRED_RETURN_ITEMS = ["Item is clean", "All parts and accessories are included", "Return photos added"]

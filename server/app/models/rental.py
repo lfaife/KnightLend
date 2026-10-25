@@ -5,14 +5,14 @@ from beanie import Document, PydanticObjectId
 from pydantic import BaseModel, Field
 
 RentalStatus = Literal[
-    "requested",       # waiting for the lender
-    "approved",        # agreement + protection hold still needed
+    "requested",  # waiting for the lender
+    "approved",  # agreement + protection hold still needed
     "rejected",
     "cancelled",
-    "confirmed",       # hold active and rental paid, waiting for pickup
-    "in_progress",     # borrower has the item
+    "confirmed",  # hold active and rental paid, waiting for pickup
+    "in_progress",  # borrower has the item
     "return_pending",  # borrower returned it, lender is checking
-    "claim_open",      # lender filed a claim
+    "claim_open",  # lender filed a claim
     "completed",
 ]
 ClaimType = Literal["damage", "late", "not_returned"]
@@ -96,7 +96,7 @@ class Rental(Document):
     borrower_id: PydanticObjectId
     lender_id: PydanticObjectId
     start_date: str  # ISO date, local time
-    end_date: str    # return due date
+    end_date: str  # return due date
     with_bundle: bool = False
     quote: Quote
     request_note: str = ""
