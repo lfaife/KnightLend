@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.db import init_db, state
 from app.models import User
-from app.routers import auth, demo, meta
+from app.routers import auth, demo, listings, meta, rentals
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("knightlend")
@@ -45,7 +45,7 @@ def create_app(use_lifespan: bool = True) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for router in (meta.router, auth.router, demo.router):
+    for router in (meta.router, auth.router, listings.router, rentals.router, demo.router):
         app.include_router(router)
 
     settings.upload_dir.mkdir(parents=True, exist_ok=True)

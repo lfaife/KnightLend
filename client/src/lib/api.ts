@@ -117,6 +117,7 @@ export interface Health {
   database: string;
   demo_mode: boolean;
   now: string;
+  today: string;
 }
 export interface DemoUser {
   id: string;
@@ -126,15 +127,365 @@ export interface DemoUser {
   affiliation: string;
 }
 
+export interface Option {
+  id: string;
+  label: string;
+}
+export interface Shortcut {
+  id: string;
+  label: string;
+  hint: string;
+  category: string | null;
+  tag: string | null;
+}
+export interface Place {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  accessibility: string | null;
+  hours: string | null;
+  kind: string | null;
+}
+export interface HoldTier {
+  label: string;
+  min_value: number;
+  max_value: number | null;
+  min_hold: number;
+  max_hold: number;
+}
+export interface TestCard {
+  number: string;
+  brand: string;
+  funding: string;
+  description: string;
+}
+export interface Meta {
+  categories: Option[];
+  conditions: Option[];
+  shortcuts: Shortcut[];
+  pickup_spots: Place[];
+  areas: Place[];
+  campus_center: [number, number];
+  hold_tiers: HoldTier[];
+  cancellation_rules: string[];
+  times_of_day: Option[];
+  return_checklist: string[];
+  service_fee: number;
+  test_cards: TestCard[];
+}
+
+export type Category = "calculators_electronics" | "art_supplies" | "tools" | "cameras_media" | "household_appliances" | "clothing_events";
+export type Condition = "new" | "like_new" | "good" | "fair";
+
+export interface OwnerSnippet {
+  id: string;
+  name: string;
+  affiliation: Affiliation;
+  verified: boolean;
+  rating_avg: number;
+  rating_count: number;
+  rentals_count: number;
+  lent_count: number;
+  avatar_url: string | null;
+}
+export interface Prices {
+  day: number;
+  week: number | null;
+  month: number | null;
+  semester: number | null;
+}
+export interface Bundle {
+  name: string;
+  includes: string[];
+  extra_per_day: number;
+}
+export interface Pickup {
+  area_name: string;
+  lat: number;
+  lng: number;
+  spot_id: string | null;
+}
+export interface Spec {
+  label: string;
+  value: string;
+}
+export interface ListingCard {
+  id: string;
+  title: string;
+  category: Category;
+  photo: string | null;
+  prices: Prices;
+  condition: Condition;
+  hold_amount: number;
+  distance_miles: number;
+  pickup: Pickup;
+  sanitized: boolean;
+  requires_approval: boolean;
+  rating_avg: number;
+  rating_count: number;
+  owner: OwnerSnippet;
+  tags: string[];
+}
+export interface ListingPage {
+  items: ListingCard[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+  origin_label: string;
+}
+export interface Review {
+  id: string;
+  rating: number;
+  text: string;
+  author_name: string;
+  author_id: string;
+  subject_role: "lender" | "borrower";
+  listing_title: string | null;
+  created_at: string;
+}
+export interface ListingDetail {
+  id: string;
+  title: string;
+  description: string;
+  category: Category;
+  tags: string[];
+  specs: Spec[];
+  condition: Condition;
+  condition_notes: string;
+  estimated_value: number;
+  prices: Prices;
+  bundle: Bundle | null;
+  hold_amount: number;
+  max_rental_days: number;
+  usage_guide: string[];
+  sanitized: boolean;
+  sanitized_note: string | null;
+  pickup: Pickup;
+  requires_approval: boolean;
+  photos: string[];
+  status: string;
+  rating_avg: number;
+  rating_count: number;
+  rentals_count: number;
+  owner: OwnerSnippet;
+  owner_reviews: Review[];
+  listing_reviews: Review[];
+  booked: { start: string; end: string }[];
+  distance_miles: number;
+  is_owner: boolean;
+  saved: boolean;
+  created_at: string;
+}
+export interface QuoteLine {
+  label: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+}
+export interface Quote {
+  days: number;
+  lines: QuoteLine[];
+  rental_fee: number;
+  bundle_fee: number;
+  service_fee: number;
+  total: number;
+  hold_amount: number;
+  estimated_value: number;
+  value_ratio: number;
+  near_purchase_price: boolean;
+}
+export interface QuoteCheck {
+  start: string;
+  end: string;
+  quote: Quote | null;
+  available: boolean;
+  problems: string[];
+  warnings: string[];
+}
+export interface SearchParams {
+  q?: string;
+  category?: string;
+  tag?: string;
+  min_price?: number;
+  max_price?: number;
+  max_distance?: number;
+  condition?: string[];
+  available_from?: string;
+  available_to?: string;
+  max_hold?: number;
+  min_rating?: number;
+  sanitized?: boolean;
+  no_approval?: boolean;
+  owner_id?: string;
+  origin?: string;
+  origin_lat?: number;
+  origin_lng?: number;
+  sort?: "nearby" | "price" | "rating" | "newest";
+  page?: number;
+  page_size?: number;
+}
+
+export type RentalStatus = "requested" | "approved" | "rejected" | "cancelled" | "confirmed" | "in_progress" | "return_pending" | "claim_open" | "completed";
+export type HoldStatus = "pending" | "active" | "released" | "captured" | "failed";
+export type Role = "borrower" | "lender" | "moderator";
+
+export interface ListingMini {
+  id: string;
+  title: string;
+  photo: string | null;
+  category: string;
+  pickup_area: string;
+  estimated_value: number;
+}
+export interface HoldEvent {
+  at: string;
+  event: string;
+  from_status: HoldStatus;
+  to_status: HoldStatus;
+  note: string;
+}
+export interface Hold {
+  id: string;
+  amount: number;
+  status: HoldStatus;
+  card: { brand: string; last4: string; funding: "credit" | "debit" } | null;
+  placed_at: string | null;
+  expires_at: string | null;
+  refresh_count: number;
+  next_refresh_at: string | null;
+  failure_message: string | null;
+  captured_amount: number;
+  released_amount: number;
+  released_at: string | null;
+  captured_at: string | null;
+  history: HoldEvent[];
+}
+export interface Meetup {
+  spot_id: string;
+  spot_name: string;
+  lat: number;
+  lng: number;
+  date: string;
+  time_of_day: "morning" | "afternoon" | "evening";
+  accessibility_note: string;
+  notes: string;
+  set_by: string;
+  set_at: string;
+}
+export interface Claim {
+  type: "damage" | "late" | "not_returned";
+  amount: number;
+  description: string;
+  photo_set_id: string | null;
+  filed_at: string;
+  status: "open" | "under_review" | "resolved";
+  borrower_response: "accept" | "dispute" | null;
+  borrower_message: string;
+  responded_at: string | null;
+  decision: "release" | "capture" | null;
+  decision_amount: number;
+  explanation: string;
+  resolved_at: string | null;
+}
+export interface PhotoSet {
+  id: string;
+  phase: "pickup" | "return" | "claim";
+  uploaded_by: string;
+  uploader_role: "borrower" | "lender";
+  uploader_name: string;
+  photos: string[];
+  note: string;
+  confirmed_by: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+}
+export interface RentalSummary {
+  id: string;
+  status: RentalStatus;
+  status_label: string;
+  my_role: Role;
+  listing: ListingMini;
+  other_party: UserPublic;
+  start_date: string;
+  end_date: string;
+  days: number;
+  total: number;
+  lender_earnings: number;
+  hold_amount: number;
+  hold_status: HoldStatus | null;
+  hold_expires_at: string | null;
+  late: boolean;
+  late_days: number;
+  needs_action: boolean;
+  next_step: string;
+  unread_messages: number;
+  created_at: string;
+  updated_at: string;
+}
+export interface RentalDetail {
+  id: string;
+  status: RentalStatus;
+  status_label: string;
+  my_role: Role;
+  listing: ListingMini;
+  borrower: UserPublic;
+  lender: UserPublic;
+  start_date: string;
+  end_date: string;
+  with_bundle: boolean;
+  bundle_name: string | null;
+  quote: Quote;
+  lender_earnings: number;
+  request_note: string;
+  decision_note: string;
+  agreement: { version: string; terms: string[]; borrower_accepted_at: string | null; lender_accepted_at: string | null };
+  hold: Hold | null;
+  payment: { charged_amount: number; charged_at: string; refunded_amount: number; claim_charged_amount: number } | null;
+  meetup: Meetup | null;
+  picked_up_at: string | null;
+  returned_at: string | null;
+  return_checklist: string[];
+  late: boolean;
+  late_days: number;
+  claim: Claim | null;
+  photo_sets: PhotoSet[];
+  timeline: { at: string; kind: string; text: string }[];
+  actions: string[];
+  next_step: string;
+  can_review: boolean;
+  my_review_done: boolean;
+  cancellation_refund_preview: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /* ---------- endpoints ---------- */
 
 export const api = {
   health: () => get<Health>("/api/health"),
+  meta: () => get<Meta>("/api/meta"),
   auth: {
     login: (email: string, password: string) => post<TokenOut>("/api/auth/login", { email, password }),
     register: (body: { name: string; email: string; password: string; affiliation: Affiliation; major?: string; grad_year?: number }) =>
       post<TokenOut>("/api/auth/register", body),
     me: () => get<UserMe>("/api/auth/me"),
+  },
+  listings: {
+    search: (p: SearchParams) => get<ListingPage>(`/api/listings${qs(p as Record<string, string | number | boolean | undefined | string[]>)}`),
+    get: (id: string) => get<ListingDetail>(`/api/listings/${id}`),
+    quote: (id: string, start: string, end: string, bundle: boolean) => get<QuoteCheck>(`/api/listings/${id}/quote${qs({ start, end, bundle })}`),
+    save: (id: string) => post<{ ok: boolean }>(`/api/listings/${id}/save`),
+    unsave: (id: string) => del<{ ok: boolean }>(`/api/listings/${id}/save`),
+    saved: () => get<ListingCard[]>("/api/listings/saved"),
+  },
+  rentals: {
+    create: (body: { listing_id: string; start_date: string; end_date: string; with_bundle: boolean; note: string }) =>
+      post<RentalDetail>("/api/rentals", body),
+    list: (role: "borrower" | "lender" | "all" = "all", scope: "active" | "history" | "all" = "all") =>
+      get<RentalSummary[]>(`/api/rentals${qs({ role, scope })}`),
+    get: (id: string) => get<RentalDetail>(`/api/rentals/${id}`),
   },
   demo: {
     users: () => get<DemoUser[]>("/api/demo/users"),
@@ -142,4 +493,4 @@ export const api = {
   },
 };
 
-export { del, patch, qs, upload };
+export { patch, upload };

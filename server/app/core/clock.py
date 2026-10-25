@@ -39,6 +39,11 @@ async def today() -> date:
     return local_date(await now())
 
 
+async def local_now() -> datetime:
+    """Current virtual time in campus local time, naive."""
+    return (await now()).replace(tzinfo=UTC).astimezone(LOCAL_TZ).replace(tzinfo=None)
+
+
 async def advance(days: float) -> datetime:
     clock = await get_clock()
     clock.offset_seconds += days * 86400
