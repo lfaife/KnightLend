@@ -10,8 +10,8 @@ export default {
         mist: "#F5F5F5",
         line: "#E0E0E0",
         charcoal: "#333333",
-        success: { DEFAULT: "#2E7D32", soft: "#E8F3E9" },
-        danger: { DEFAULT: "#C62828", soft: "#FBEAEA" },
+        success: { DEFAULT: "#2E7D32", soft: "#F0F7F0" },
+        danger: { DEFAULT: "#C62828", soft: "#FDF0F0" },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],

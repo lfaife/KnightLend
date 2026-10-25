@@ -1,3 +1,6 @@
+# Fixed project name: every checkout reuses the same MongoDB container and data volume.
+name: knightlend
+
 services:
   mongo:
     image: mongo:7.0

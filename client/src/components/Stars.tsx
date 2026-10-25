@@ -1,7 +1,7 @@
 export function Stars({ value, count, size = 14, showNumber = true }: { value: number; count?: number; size?: number; showNumber?: boolean }) {
   const full = Math.round(value * 2) / 2;
   return (
-    <span className="inline-flex items-center gap-1" aria-label={count !== undefined ? `${value.toFixed(1)} out of 5 stars, ${count} reviews` : `${value} out of 5 stars`}>
+    <span className="inline-flex items-center gap-1" role="img" aria-label={count !== undefined ? `${value.toFixed(1)} out of 5 stars, ${count} reviews` : `${value} out of 5 stars`}>
       <span className="inline-flex" aria-hidden="true">
         {[1, 2, 3, 4, 5].map((i) => (
           <svg key={i} width={size} height={size} viewBox="0 0 24 24">

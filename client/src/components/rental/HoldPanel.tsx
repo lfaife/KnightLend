@@ -43,7 +43,10 @@ export function MoneyPanel({ r }: { r: RentalDetail }) {
               )}
             </>
           ) : (
-            <div className="text-charcoal">Nothing yet. {r.my_role === "borrower" ? `You'll pay ${money(r.quote.total)} when you place the hold.` : `${r.borrower.name.split(" ")[0]} pays ${money(r.quote.total)} when the hold is placed.`}</div>
+            <div>
+              <dt className="sr-only">Status</dt>
+              <dd className="text-charcoal">Nothing yet. {r.my_role === "borrower" ? `You'll pay ${money(r.quote.total)} when you place the hold.` : `${r.borrower.name.split(" ")[0]} pays ${money(r.quote.total)} when the hold is placed.`}</dd>
+            </div>
           )}
           {r.my_role === "lender" && (
             <div className="flex justify-between border-t border-line pt-1">

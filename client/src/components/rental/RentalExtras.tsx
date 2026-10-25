@@ -292,7 +292,7 @@ function ReviewForm({ r, act }: { r: RentalDetail; act: Act }) {
         <legend className="field-label">Rating</legend>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((i) => (
-            <button key={i} type="button" onClick={() => setRating(i)} aria-label={`${i} star${i > 1 ? "s" : ""}`} aria-pressed={rating === i} className="rounded p-0.5">
+            <button key={i} type="button" onClick={() => setRating(i)} aria-label={`Rate ${i} star${i > 1 ? "s" : ""}`} aria-pressed={rating === i} className="rounded p-0.5">
               <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill={i <= rating ? "#FFC904" : "#E0E0E0"} stroke="#000" strokeWidth={1} />
               </svg>

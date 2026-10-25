@@ -92,7 +92,7 @@ function RentalView() {
   return (
     <div className="page max-w-4xl space-y-5">
       <header className="flex flex-wrap items-start gap-4">
-        <Link to={`/listings/${r.listing.id}`} className="h-20 w-24 shrink-0 overflow-hidden rounded-lg bg-ink">
+        <Link to={`/listings/${r.listing.id}`} aria-label={`View listing: ${r.listing.title}`} className="h-20 w-24 shrink-0 overflow-hidden rounded-lg bg-ink">
           {r.listing.photo && <img src={r.listing.photo} alt="" className="h-full w-full object-cover" />}
         </Link>
         <div className="min-w-0 flex-1 space-y-1">

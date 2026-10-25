@@ -16,6 +16,8 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
+# Beanie 1.x and lazy-model trigger Pydantic 2.11 deprecation warnings internally; they are not ours.
+filterwarnings = ["ignore::pydantic.warnings.PydanticDeprecatedSince211"]
 
 [tool.ruff.lint.per-file-ignores]
 "app/services/geo.py" = ["E501"]

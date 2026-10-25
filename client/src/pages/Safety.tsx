@@ -102,7 +102,7 @@ export default function Safety() {
       <section className="space-y-3 rounded-card border-2 border-ink p-5">
         <h2 className="text-xl">Report a problem</h2>
         <p className="text-sm text-charcoal">
-          Use “Report” on any profile or listing. Moderators review reports, and members with repeated bad reviews or reports can be restricted from listing and requesting. If you ever feel unsafe, leave and contact campus police or call 911.
+          Use “Report” on any profile or listing. Moderators review reports, and members with repeated bad reviews or reports can be restricted from listing and requesting. If you ever feel unsafe, leave right away and contact campus police or emergency services.
         </p>
         <Link to="/browse" className="btn-secondary btn-sm">
           Back to browsing
