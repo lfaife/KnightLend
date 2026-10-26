@@ -1,0 +1,25 @@
+[project]
+name = "knightlend-server"
+version = "1.0.0"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "BLE"]
+ignore = ["B008", "E501"]  # line length is handled by ruff format
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+# Beanie 1.x and lazy-model trigger Pydantic 2.11 deprecation warnings internally; they are not ours.
+filterwarnings = ["ignore::pydantic.warnings.PydanticDeprecatedSince211"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/services/geo.py" = ["E501"]
+"app/seed/*" = ["E501"]
+"app/services/policies.py" = ["E501"]

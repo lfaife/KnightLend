@@ -1,0 +1,1485 @@
+<title>KnightLend</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky app bar over a centered 1120px column. Money has two visual languages:
+   charged = solid ink, held = dashed amber outline. They never share a style. */
+:root{
+  --bg:#F2F4F8; --surface:#FFFFFF; --sunk:#E8ECF3; --ink:#131A2B; --muted:#576079;
+  --line:#DAE0EA; --line-strong:#B9C2D3;
+  --accent:#2B44C4; --accent-hover:#2238A8; --accent-soft:#E5E9FB; --on-accent:#FFFFFF;
+  --hold:#875400; --hold-bg:#FFF4D8; --hold-line:#D69A2D;
+  --ok:#17734A; --ok-bg:#E2F3E9; --bad:#B42318; --bad-bg:#FDE8E5; --pend:#5A6378; --pend-bg:#EDF0F5;
+  --tile-s:55%; --tile-l:91%; --tile-ink:34%;
+  --shadow:0 16px 40px rgb(19 26 43 / .14);
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1320; --surface:#161D2D; --sunk:#1E2638; --ink:#E8ECF5; --muted:#9CA5BB;
+    --line:#29324A; --line-strong:#3E4964;
+    --accent:#8FA3FF; --accent-hover:#A9B8FF; --accent-soft:#232D52; --on-accent:#0E1430;
+    --hold:#F2C66B; --hold-bg:#30260F; --hold-line:#A8802F;
+    --ok:#62CC97; --ok-bg:#12291F; --bad:#FF8A7E; --bad-bg:#3A1A18; --pend:#A5AEC4; --pend-bg:#222A3D;
+    --tile-s:28%; --tile-l:21%; --tile-ink:78%;
+    --shadow:0 16px 40px rgb(0 0 0 / .45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1320; --surface:#161D2D; --sunk:#1E2638; --ink:#E8ECF5; --muted:#9CA5BB;
+  --line:#29324A; --line-strong:#3E4964;
+  --accent:#8FA3FF; --accent-hover:#A9B8FF; --accent-soft:#232D52; --on-accent:#0E1430;
+  --hold:#F2C66B; --hold-bg:#30260F; --hold-line:#A8802F;
+  --ok:#62CC97; --ok-bg:#12291F; --bad:#FF8A7E; --bad-bg:#3A1A18; --pend:#A5AEC4; --pend-bg:#222A3D;
+  --tile-s:28%; --tile-l:21%; --tile-ink:78%;
+  --shadow:0 16px 40px rgb(0 0 0 / .45);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0;letter-spacing:-.012em}
+h1{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:750}
+h2{font-size:1.4rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:650}
+h1:focus{outline:none}
+p{margin:0}
+ul,ol{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page{padding-block:24px 72px;display:grid;gap:20px}
+.narrow{max-width:1000px}
+.muted{color:var(--muted)}
+.hint{font-size:.84rem;color:var(--muted)}
+.center{text-align:center}
+.eyebrow{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.flabel,.field label{font-size:.82rem;font-weight:650;color:var(--ink)}
+.mini-label{display:block;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.h-page{font-size:clamp(1.6rem,3.4vw,2.1rem)}
+.h-sec{font-size:1.1rem;margin-top:8px}
+.h-small{font-size:1rem;font-weight:700}
+.stack{display:grid;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* proto strip + header */
+.proto{background:var(--sunk);color:var(--muted);font-size:.8rem}
+.proto .wrap{padding-block:6px}
+.proto b{color:var(--ink);font-weight:650}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:18px;min-height:60px}
+.brand{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--f-display);font-weight:800;font-size:1.22rem;letter-spacing:-.02em;color:var(--ink)}
+.brand svg{color:var(--accent)}
+.nav{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{background:none;border:0;padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:600;cursor:pointer;white-space:nowrap}
+.nav button:hover{color:var(--ink);background:var(--sunk)}
+.nav button.on{color:var(--ink);background:var(--accent-soft)}
+.top-actions{display:flex;gap:8px;align-items:center}
+.bell{position:relative;width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink);padding:0}
+.bell .count{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--bad);color:var(--surface);font-size:.7rem;font-weight:700;display:grid;place-items:center}
+@media (max-width:720px){
+  .top-in{flex-wrap:wrap;row-gap:4px;padding-block:8px}
+  .brand{margin-right:auto}
+  .nav{order:3;flex-basis:100%}
+}
+.notifs{position:absolute;left:0;right:0;top:100%}
+.notif-panel{margin:8px 0 0 auto;width:min(390px,100%);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:8px;display:grid;gap:4px}
+.notif-head{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 4px}
+.notif{display:grid;gap:2px;text-align:left;background:none;border:0;border-left:3px solid var(--line);border-radius:6px;padding:9px 10px;cursor:pointer}
+.notif:hover{background:var(--sunk)}
+.notif span{font-size:.86rem;color:var(--muted)}
+.notif time{font-size:.74rem;color:var(--muted);font-family:var(--f-mono)}
+.n-hold{border-left-color:var(--hold-line)} .n-bad{border-left-color:var(--bad)} .n-ok{border-left-color:var(--ok)} .n-info{border-left-color:var(--accent)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:9px;padding:10px 16px;font-weight:650;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;line-height:1.2;text-align:center}
+.btn:hover{border-color:var(--ink)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn-danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-sm{padding:7px 12px;font-size:.87rem}
+.btn-block{width:100%}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-size:.9rem}
+.back{justify-self:start;background:none;border:0;padding:0;color:var(--muted);font-weight:600;cursor:pointer}
+.back:hover{color:var(--ink)}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:.77rem;font-weight:650;padding:3px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;line-height:1.35}
+.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.b-pend{background:var(--pend-bg);color:var(--pend);border:1px dashed var(--pend)}
+.b-active{background:var(--hold-bg);color:var(--hold);border:1px dashed var(--hold-line)}
+.b-rel{background:var(--ok-bg);color:var(--ok)}
+.b-cap{background:var(--bad-bg);color:var(--bad)}
+.b-fail{background:var(--surface);color:var(--bad);border-color:var(--bad)}
+.b-soft{background:var(--sunk);color:var(--muted)}
+.b-review{background:var(--accent-soft);color:var(--accent)}
+
+/* money vocabulary */
+.held-amt{color:var(--hold);font-weight:700;font-variant-numeric:tabular-nums}
+.tag-held{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--hold);background:var(--hold-bg);border:1px dashed var(--hold-line);border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px;white-space:nowrap}
+.hold-mini{font-size:.8rem;font-weight:600;color:var(--hold);white-space:nowrap}
+.holdbox{display:flex;align-items:flex-start;gap:10px;background:var(--hold-bg);border:1.5px dashed var(--hold-line);border-radius:11px;padding:12px}
+.holdbox-ico{color:var(--hold);flex:none;margin-top:1px}
+.holdbox p{flex:1;min-width:0}
+.holdbox b{color:var(--hold)}
+.tip{position:relative;flex:none}
+.tip-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--hold);background:transparent;color:var(--hold);font:700 12px/1 var(--f-mono);cursor:pointer;display:grid;place-items:center;padding:0}
+.tip-pop{position:absolute;right:-6px;bottom:calc(100% + 8px);width:min(260px,72vw);background:var(--ink);color:var(--bg);padding:10px 12px;border-radius:9px;font-size:.84rem;line-height:1.45;box-shadow:var(--shadow);opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .15s,transform .15s,visibility .15s;z-index:6}
+.tip:hover .tip-pop,.tip-btn:focus-visible + .tip-pop,.tip.open .tip-pop{opacity:1;visibility:visible;transform:none}
+.sum{display:grid;gap:8px;font-size:.93rem}
+.sum-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.sum-row > span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sum-total{border-top:1px solid var(--line);padding-top:8px;font-weight:700}
+.sum-hold{border:1.5px dashed var(--hold-line);background:var(--hold-bg);border-radius:10px;padding:10px 12px;display:grid;gap:3px;margin-top:4px}
+.sum-row.cap > span:last-child{color:var(--bad);font-weight:700}
+
+/* panels, alerts, demo controls */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.pad{padding:20px;display:grid;gap:16px}
+.alert{display:flex;gap:12px;align-items:flex-start;border-radius:11px;padding:12px 14px;border:1px solid var(--line)}
+.alert > div{display:grid;gap:4px;min-width:0}
+.alert-bad{background:var(--bad-bg);border-color:var(--bad)}
+.alert-bad b{color:var(--bad)}
+.alert-hold{background:var(--hold-bg);border:1.5px dashed var(--hold-line)}
+.alert-hold b{color:var(--hold)}
+.alert-ok{background:var(--ok-bg);border-color:var(--ok)}
+.alert-ok b{color:var(--ok)}
+.alert-ico{flex:none;margin-top:2px}
+.alert-bad .alert-ico{color:var(--bad)} .alert-hold .alert-ico{color:var(--hold)} .alert-ok .alert-ico{color:var(--ok)}
+.note{font-size:.86rem;color:var(--muted)}
+.demo{border:1.5px dashed var(--line-strong);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.demo-label{font:500 .7rem var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.demo-btns{display:flex;flex-wrap:wrap;gap:8px}
+.role{justify-self:start;display:inline-flex;font:500 .72rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:6px;background:var(--sunk);color:var(--muted)}
+.role.lender{background:var(--accent-soft);color:var(--accent)}
+.spinner{width:22px;height:22px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* forms */
+.field{display:grid;gap:6px}
+input[type="text"],input[type="search"],input[type="number"],select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);color:var(--ink)}
+textarea{resize:vertical}
+input[type="range"]{width:100%;accent-color:var(--accent)}
+.check,.radio{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input,.radio input{margin-top:4px;accent-color:var(--accent)}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{padding:0}
+.opt{display:grid;gap:8px}
+.opt label{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.opt label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt small{display:block;color:var(--muted);font-size:.84rem}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.cardform{display:grid;gap:14px}
+.ccwrap{position:relative}
+.cc-brand{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:500 .76rem var(--f-mono);color:var(--muted);pointer-events:none}
+#cc-num,#cc-exp,#cc-cvc,#cc-zip{font-family:var(--f-mono);letter-spacing:.03em}
+.testcards{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.82rem;color:var(--muted)}
+.testcards button{font:500 .76rem var(--f-mono);border:1px dashed var(--line-strong);background:var(--bg);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--ink)}
+.testcards button:hover{border-color:var(--ink)}
+.err-text{color:var(--bad);font-size:.86rem;font-weight:600}
+
+/* browse */
+.intro{padding-block:36px 26px;display:grid;gap:10px}
+.intro h1{max-width:20ch}
+.lede{max-width:62ch;color:var(--muted);font-size:1.04rem}
+.browse{display:grid;grid-template-columns:236px minmax(0,1fr);gap:28px;padding-block:4px 72px}
+.filters{display:grid;gap:20px;align-content:start;position:sticky;top:84px}
+.fgroup{display:grid;gap:8px}
+.flabel-row{display:flex;justify-content:space-between;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:.84rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+@media (max-width:860px){.browse{grid-template-columns:1fr}.filters{position:static}}
+.results{display:grid;gap:12px;align-content:start;min-width:0}
+.results-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline;color:var(--muted);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.lcard{display:flex;flex-direction:column;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;padding:0;transition:border-color .15s,transform .15s}
+button.lcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tile{background:hsl(var(--h) var(--tile-s) var(--tile-l));color:hsl(var(--h) 45% var(--tile-ink))}
+.lcard .tile{aspect-ratio:4/3;max-width:100%;display:grid;place-items:center}
+.lcard-body{display:flex;flex-direction:column;gap:3px;padding:12px 14px 14px;flex:1}
+.lcard-title{font-weight:650;line-height:1.3}
+.lcard-meta{font-size:.82rem;color:var(--muted)}
+.lcard-foot{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-top:auto;padding-top:8px}
+.price b{font-family:var(--f-display);font-size:1.15rem}
+.price{font-size:.85rem;color:var(--muted)}
+.price b{color:var(--ink)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);border:1.5px dashed var(--line-strong);border-radius:14px}
+
+/* listing detail */
+.ld{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px;align-items:start}
+.ld-main{display:grid;gap:14px}
+.ld-media{aspect-ratio:16/10;max-width:100%;border-radius:16px;display:grid;place-items:center}
+.ld-title{font-size:clamp(1.5rem,3vw,2rem)}
+.ld-desc{max-width:62ch}
+.facts{display:grid;gap:0;margin:0;border-top:1px solid var(--line)}
+.facts div{display:grid;grid-template-columns:140px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.facts dt{color:var(--muted);font-size:.88rem}
+.facts dd{margin:0}
+.book{padding:20px;display:grid;gap:16px;position:sticky;top:84px}
+.book-price{font-size:.95rem;color:var(--muted)}
+.book-price b{font-family:var(--f-display);font-size:1.7rem;color:var(--ink)}
+.days{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.days-dates{font-size:.9rem}
+.stepper-num{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:10px;overflow:hidden}
+.stepper-num button{width:36px;height:36px;border:0;background:var(--surface);cursor:pointer;font-size:1.1rem}
+.stepper-num button:disabled{opacity:.35;cursor:not-allowed}
+.stepper-num span{min-width:66px;text-align:center;font-weight:650;font-variant-numeric:tabular-nums}
+.cancel{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:8px}
+.cancel ul{padding-left:18px;display:grid;gap:5px;font-size:.86rem;color:var(--muted)}
+.cancel b{color:var(--ink);font-weight:600}
+@media (max-width:860px){.ld{grid-template-columns:1fr}.book{position:static}}
+@media (max-width:520px){.facts div{grid-template-columns:1fr;gap:2px}}
+
+/* request flow */
+.steps{list-style:none;padding:0;display:flex;gap:6px;overflow-x:auto}
+.steps li{flex:1;min-width:112px;display:flex;align-items:center;gap:8px;padding-top:10px;border-top:3px solid var(--line);color:var(--muted);font-size:.85rem;font-weight:600}
+.steps li.done{border-color:var(--ok);color:var(--ink)}
+.steps li.cur{border-color:var(--accent);color:var(--ink)}
+.steps li.err{border-color:var(--bad)}
+.steps-n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);font-size:.74rem;flex:none}
+.steps li.done .steps-n{background:var(--ok);color:var(--surface)}
+.steps li.cur .steps-n{background:var(--accent);color:var(--on-accent)}
+.steps li.err .steps-n{background:var(--bad);color:var(--surface)}
+.req-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px;align-items:start}
+.req-main{display:grid;gap:16px}
+.req-side{padding:18px;display:grid;gap:14px;position:sticky;top:84px}
+@media (max-width:860px){.req-grid{grid-template-columns:1fr}.req-side{position:static;order:-1}}
+.mini{display:flex;gap:12px;align-items:center}
+.mini > div{min-width:0}
+.tile.sm{width:52px;height:52px;border-radius:11px;display:grid;place-items:center;flex:none}
+.mini-title{font-weight:650;line-height:1.3}
+.mini-sub{font-size:.84rem;color:var(--muted)}
+.wait-row{display:flex;gap:14px;align-items:flex-start}
+.kv{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:10px;font-size:.92rem}
+.agree{padding-left:20px;display:grid;gap:10px;max-width:68ch}
+.agree li::marker{color:var(--muted);font-weight:600}
+.breakdown{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bd{border-radius:12px;padding:12px 14px;display:grid;gap:2px}
+.bd-charge{background:var(--sunk);border:1px solid var(--line)}
+.bd-hold{background:var(--hold-bg);border:1.5px dashed var(--hold-line)}
+.bd-amt{font-family:var(--f-display);font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.bd-sub{font-size:.8rem;color:var(--muted)}
+.bd-hold .bd-amt,.bd-hold .mini-label{color:var(--hold)}
+.plain{font-size:.95rem;border-left:3px solid var(--line-strong);padding-left:10px}
+@media (max-width:420px){.breakdown{grid-template-columns:1fr}}
+.success{display:grid;gap:14px;justify-items:start}
+.success-ico{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--ok-bg);color:var(--ok)}
+.success-ico.bad{background:var(--bad-bg);color:var(--bad)}
+.success .money2{width:100%}
+
+/* rentals */
+.rlist{display:grid;gap:10px}
+.rrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:16px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px;cursor:pointer}
+.rrow:hover{border-color:var(--accent)}
+.rrow-main{display:grid;gap:2px;min-width:0}
+.rrow-title{font-weight:650}
+.rrow-sub{font-size:.85rem;color:var(--muted)}
+.rrow-money{display:flex;gap:18px;font-variant-numeric:tabular-nums}
+.rrow-money > span{display:grid;justify-items:end}
+.rrow-badges{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+@media (max-width:760px){
+  .rrow{grid-template-columns:auto minmax(0,1fr);row-gap:8px}
+  .rrow-money,.rrow-badges{grid-column:2}
+  .rrow-money > span{justify-items:start}
+  .rrow-badges{flex-direction:row;flex-wrap:wrap;align-items:center}
+}
+.rd-head{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.rd-head .tile.sm{width:64px;height:64px}
+.rd-head > div{flex:1;min-width:220px;display:grid;gap:4px}
+.money2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mcol{border-radius:13px;padding:14px 16px;border:1px solid var(--line);background:var(--surface);display:grid;gap:6px;align-content:start}
+.mcol.held{background:var(--hold-bg);border:1.5px dashed var(--hold-line)}
+.mcol.held .mini-label,.mcol.held .mbig{color:var(--hold)}
+.mbig{font-family:var(--f-display);font-size:1.75rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.mcol .sum{font-size:.88rem}
+@media (max-width:560px){.money2{grid-template-columns:1fr}}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.two{grid-template-columns:1fr}}
+details.agreement{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px 16px}
+details.agreement summary{cursor:pointer;font-weight:650}
+details.agreement[open] summary{margin-bottom:12px}
+
+/* timeline */
+.tl{list-style:none;padding:0;display:grid}
+.tl li{display:grid;grid-template-columns:64px 18px minmax(0,1fr);gap:10px;align-items:start;position:relative;padding-bottom:16px}
+.tl li:not(:last-child)::after{content:"";position:absolute;left:82px;top:18px;bottom:0;width:2px;background:var(--line)}
+.tl time{font-size:.78rem;color:var(--muted);text-align:right;padding-top:2px;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
+.tl .dot{width:12px;height:12px;border-radius:50%;margin:5px auto 0;background:var(--surface);border:2px solid var(--line-strong);position:relative;z-index:1}
+.tl li.done .dot{background:var(--ok);border-color:var(--ok)}
+.tl li.next .dot{border-style:dashed}
+.tl li.now .dot{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.tl li.fail .dot,.tl li.cap .dot{background:var(--bad);border-color:var(--bad)}
+.tl b{display:block;font-weight:650}
+.tl li.fail b,.tl li.cap b{color:var(--bad)}
+.tl .x{display:block;color:var(--muted);font-size:.87rem}
+
+/* return flow */
+.holdbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--hold-bg);border:1.5px dashed var(--hold-line);border-radius:11px;padding:10px 14px;color:var(--hold);font-weight:600}
+.holdbar.released{background:var(--ok-bg);border:1px solid var(--ok);color:var(--ok)}
+.holdbar.captured{background:var(--bad-bg);border:1px solid var(--bad);color:var(--bad)}
+.holdbar .spacer{flex:1}
+.ph-row{display:flex;flex-wrap:wrap;gap:10px}
+.ph{margin:0;display:grid;gap:4px;width:118px;position:relative}
+.ph-img{width:118px;height:88px;border-radius:10px;display:grid;place-items:center;position:relative;overflow:hidden}
+.ph img{width:118px;height:88px;object-fit:cover;border-radius:10px;display:block}
+.ph figcaption{font-size:.74rem;color:var(--muted)}
+.ph-mark{position:absolute;left:60%;top:16%;width:30px;height:30px;border:2.5px solid var(--bad);border-radius:50%}
+.ph-x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:.8rem;cursor:pointer;line-height:1}
+.ph-add{position:relative;width:118px;height:88px;border:1.5px dashed var(--line-strong);border-radius:10px;display:grid;place-items:center;text-align:center;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;padding:6px}
+.ph-add:hover{border-color:var(--ink);color:var(--ink)}
+.ph-add:focus-within{outline:2.5px solid var(--accent);outline-offset:2px}
+.ph-add input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.evi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.evi > div{display:grid;gap:8px;align-content:start}
+@media (max-width:640px){.evi{grid-template-columns:1fr}}
+.claimcard{display:grid;gap:12px;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.claimcard dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:.92rem}
+.claimcard dt{color:var(--muted)}
+.claimcard dd{margin:0}
+.quote{border-left:3px solid var(--line-strong);padding-left:10px;font-style:italic;color:var(--muted)}
+.amt-row{display:flex;gap:14px;align-items:center}
+.amt-row output{min-width:56px;text-align:right;font-family:var(--f-display);font-size:1.3rem}
+
+/* dashboard */
+.seg{display:inline-flex;background:var(--sunk);border-radius:10px;padding:3px;justify-self:start}
+.seg button{border:0;background:none;padding:7px 14px;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .1)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:14px 16px;display:grid;gap:4px;align-content:start}
+.stat.held{background:var(--hold-bg);border:1.5px dashed var(--hold-line)}
+.stat-n{font-family:var(--f-display);font-size:1.8rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat.held .stat-n,.stat.held .mini-label{color:var(--hold)}
+.stat.rel .stat-n{color:var(--ok)}
+.stat.cap .stat-n{color:var(--bad)}
+.stat p{font-size:.82rem;color:var(--muted)}
+.hbar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--sunk);gap:2px}
+.hbar span{display:block;height:100%}
+.s-held{background:repeating-linear-gradient(45deg,var(--hold-line) 0 5px,var(--hold-bg) 5px 9px)}
+.s-rel{background:var(--ok)}
+.s-cap{background:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:.84rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:13px;background:var(--surface)}
+.tbl{width:100%;border-collapse:collapse;min-width:640px;font-size:.92rem}
+.tbl th,.tbl td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* create */
+.create{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:28px;align-items:start}
+.create-prev{display:grid;gap:12px;position:sticky;top:84px}
+.create-prev .lcard{cursor:default;max-width:320px}
+.hold-set{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:16px}
+.amt-big{font-family:var(--f-display);font-size:1.4rem}
+.tiers{width:100%;border-collapse:collapse;font-size:.88rem}
+.tiers th,.tiers td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+.tiers th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tiers tr.on td{background:var(--hold-bg);color:var(--hold);font-weight:650}
+@media (max-width:860px){.create{grid-template-columns:1fr}.create-prev{position:static}}
+
+/* safety */
+.flow{list-style:none;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.flow li{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--line-strong);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.flow li.h{border-top-color:var(--hold-line)}
+.flow li.g{border-top-color:var(--ok)}
+.flow li.r{border-top-color:var(--bad)}
+.flow .n{font:500 .74rem var(--f-mono);color:var(--muted)}
+.flow p{font-size:.9rem;color:var(--muted)}
+@media (max-width:860px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.flow{grid-template-columns:1fr}}
+.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vs > div{border-radius:13px;padding:16px;display:grid;gap:8px;align-content:start}
+.vs ul{padding-left:18px;display:grid;gap:4px;font-size:.92rem}
+.vs .c{background:var(--surface);border:1px solid var(--line)}
+.vs .hh{background:var(--hold-bg);border:1.5px dashed var(--hold-line)}
+.vs .hh h3{color:var(--hold)}
+@media (max-width:640px){.vs{grid-template-columns:1fr}}
+.faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.faq > div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.faq p{font-size:.92rem;color:var(--muted)}
+@media (max-width:640px){.faq{grid-template-columns:1fr}}
+.prose{max-width:66ch;display:grid;gap:8px}
+
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:10px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:calc(100% - 32px);z-index:60;font-weight:600;font-size:.92rem;box-shadow:var(--shadow)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+
+<div class="proto"><div class="wrap"><b>Prototype.</b> Every card, charge and hold here is simulated. Use the test card numbers only.</div></div>
+<header class="top">
+  <div class="wrap top-in">
+    <button class="brand" data-go="browse" aria-label="KnightLend home">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 4 5v6c0 5.2 3.4 9.5 8 11 4.6-1.5 8-5.8 8-11V5l-8-3Z"/><path d="M9 7h2.2v3.6L14 7h2.5l-3.2 4 3.4 5h-2.6l-2.3-3.6-.6.7V16H9V7Z" fill="var(--surface)"/></svg>
+      KnightLend
+    </button>
+    <nav class="nav" aria-label="Main">
+      <button data-go="browse">Browse</button>
+      <button data-go="rentals">My rentals</button>
+      <button data-go="dashboard">Dashboard</button>
+      <button data-go="safety">Safety</button>
+    </nav>
+    <div class="top-actions">
+      <button class="bell" data-action="toggle-notifs" aria-label="Notifications" aria-expanded="false" id="bell">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+        <span class="count" id="bell-count"></span>
+      </button>
+      <button class="btn btn-primary btn-sm" data-go="create">List an item</button>
+    </div>
+  </div>
+  <div class="notifs" id="notifs" hidden></div>
+</header>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TODAY = new Date(2026, 9, 24);
+const SERVICE = 1.5;
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const D = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d, n) => { const x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; };
+const same = (a, b) => iso(a) === iso(b);
+const fmtD = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+const fmtW = d => d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+const relD = d => same(d, TODAY) ? 'Today' : same(d, addDays(TODAY,1)) ? 'Tomorrow' : fmtD(d);
+const usd = n => '$' + n.toFixed(2);          // charges always show cents
+const usd0 = n => '$' + Math.round(n);        // holds show whole dollars
+const first = n => n.split(' ')[0];
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+const ICONS = {
+  camera:'<rect x="6" y="14" width="36" height="24" rx="4"/><circle cx="24" cy="26" r="7"/><path d="M17 14l3-5h8l3 5"/>',
+  projector:'<rect x="5" y="15" width="38" height="18" rx="4"/><circle cx="32" cy="24" r="5"/><path d="M11 21h9M11 27h6M11 33v4M37 33v4"/>',
+  calc:'<rect x="12" y="5" width="24" height="38" rx="3"/><rect x="16" y="9" width="16" height="8" rx="1"/><path d="M17 23h2M23 23h2M29 23h2M17 29h2M23 29h2M29 29h2M17 35h2M23 35h2M29 35h2"/>',
+  tent:'<path d="M5 40 24 8l19 32z"/><path d="m18 40 6-12 6 12"/><path d="M3 40h42"/>',
+  scooter:'<circle cx="11" cy="36" r="5"/><circle cx="38" cy="36" r="5"/><path d="M11 36h22l4-26h6"/>',
+  lab:'<path d="M19 6h10M21 6v13L10 40h28L27 19V6"/><path d="M15 31h18"/>',
+  game:'<rect x="5" y="15" width="38" height="20" rx="10"/><path d="M13 25h8M17 21v8"/><circle cx="31" cy="23" r="1.6" fill="currentColor"/><circle cx="35" cy="27" r="1.6" fill="currentColor"/>',
+  speaker:'<rect x="13" y="5" width="22" height="38" rx="5"/><circle cx="24" cy="29" r="7"/><circle cx="24" cy="14" r="2.5"/>',
+  box:'<path d="m6 15 18-9 18 9v18l-18 9-18-9z"/><path d="m6 15 18 9 18-9M24 24v18"/>'
+};
+const icon = (k, size = 48) => `<svg viewBox="0 0 48 48" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k] || ICONS.box}</svg>`;
+const shield = (s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5.2 3.4 9.5 8 11 4.6-1.5 8-5.8 8-11V5l-8-3Z"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>`;
+const ico = {
+  check:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  alert:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v6M12 16.5v.5"/></svg>',
+  bell:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
+  card:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15h4"/></svg>'
+};
+
+/* ---------- protection hold rules ---------- */
+function holdRange(v){
+  if (v < 50) return {min:5, max:15, label:'under $50', key:0};
+  if (v < 150) return {min:25, max:50, label:'$50 to $150', key:1};
+  return {min:75, max:150, label:'$150 and up', key:2};
+}
+function suggestHold(v){
+  const r = holdRange(v);
+  const t = v < 50 ? v / 50 : v < 150 ? (v - 50) / 100 : Math.min(v - 150, 150) / 150;
+  return clamp(Math.round((r.min + t * (r.max - r.min)) / 5) * 5, r.min, r.max);
+}
+// Holds last about 7 days; schedule a refresh every 7 days until the return date.
+function refreshPlan(placed, end){
+  const out = []; let exp = addDays(placed, 7);
+  while (exp < end) { out.push({date: iso(exp), state: 'scheduled'}); exp = addDays(exp, 7); }
+  return out;
+}
+function holdExpires(h){
+  if (h.expires) return D(h.expires);
+  let base = D(h.placed);
+  (h.refreshes || []).forEach(f => { if (f.state === 'done' && D(f.date) > base) base = D(f.date); });
+  return addDays(base, 7);
+}
+
+/* ---------- data ---------- */
+const LISTINGS = [
+  {id:'camera', title:'Canon EOS Rebel T7 with 18–55mm lens', short:'Canon Rebel T7 camera', cat:'Electronics', icon:'camera', h:222, value:450, price:18, hold:120, lender:'Maya R.', rating:4.9, trips:31, spot:'Student Union, main entrance', dist:0.3, cond:'Like new', desc:'Two batteries, charger, a 64 GB SD card and a padded bag. Good for class projects, club events and portraits.'},
+  {id:'projector', title:'Epson portable projector (1080p)', short:'Epson projector', cat:'Electronics', icon:'projector', h:262, value:220, price:12, hold:100, lender:'Devon K.', rating:4.8, trips:18, spot:'Library, first-floor lobby', dist:0.5, cond:'Good', desc:'HDMI and USB-C cables included. Bright enough for a dorm movie night or a club meeting in a small room.'},
+  {id:'calc', title:'TI-84 Plus CE graphing calculator', short:'TI-84 Plus CE', cat:'Academic', icon:'calc', h:196, value:120, price:3, hold:40, lender:'Priya S.', rating:5.0, trips:44, spot:'Math and Physics building, front steps', dist:0.4, cond:'Good', desc:'Charged and reset to factory settings before every rental. Charging cable included. Exam-approved model.'},
+  {id:'tent', title:'2-person backpacking tent', short:'2-person tent', cat:'Outdoors', icon:'tent', h:140, value:90, price:8, hold:35, lender:'Luis M.', rating:4.7, trips:12, spot:'Recreation center, bike racks', dist:1.1, cond:'Good', desc:'Weighs 4 lb. Rainfly, stakes and footprint included. Please dry it out before you bring it back.'},
+  {id:'scooter', title:'Segway Ninebot electric scooter', short:'Electric scooter', cat:'Transport', icon:'scooter', h:18, value:350, price:15, hold:125, lender:'Ana G.', rating:4.6, trips:9, spot:'Parking garage C, level 1', dist:0.9, cond:'Good', desc:'About 15 miles per charge. Helmet and charger included. You need to be 18 or older to rent it.'},
+  {id:'lab', title:'Lab coat and safety goggles set', short:'Lab coat and goggles', cat:'Academic', icon:'lab', h:172, value:35, price:2, hold:10, lender:'Sam T.', rating:4.9, trips:27, spot:'Chemistry building, room 101 hallway', dist:0.6, cond:'Like new', desc:'Size M coat and anti-fog goggles. Washed after every rental.'},
+  {id:'switch', title:'Nintendo Switch OLED with two controllers', short:'Nintendo Switch OLED', cat:'Games', icon:'game', h:352, value:280, price:10, hold:120, lender:'Sam T.', rating:4.9, trips:22, spot:'Housing community center', dist:0.8, cond:'Like new', desc:'Comes with Mario Kart 8 and Smash Bros. Dock and HDMI cable included.'},
+  {id:'speaker', title:'JBL Flip 6 Bluetooth speaker', short:'JBL Flip 6 speaker', cat:'Electronics', icon:'speaker', h:300, value:70, price:5, hold:30, lender:'Devon K.', rating:4.8, trips:15, spot:'Library, first-floor lobby', dist:0.5, cond:'Good', desc:'Waterproof, about 12 hours of battery. USB-C charger included.'}
+];
+const lst = id => LISTINGS.find(l => l.id === id);
+
+let RENTALS = [
+  {id:'r1', lid:'projector', start:'2026-10-18', days:14, phase:'out',
+   hold:{amount:100, status:'active', placed:'2026-10-18', card:'Visa credit ending 4242', refreshes:[{date:'2026-10-25', state:'scheduled'}]}},
+  {id:'r2', lid:'tent', start:'2026-10-17', days:11, phase:'out',
+   hold:{amount:35, status:'active', placed:'2026-10-17', card:'Visa debit ending 5556', refreshes:[{date:'2026-10-24', state:'failed'}]}},
+  {id:'r3', lid:'camera', start:'2026-10-23', days:3, phase:'out',
+   hold:{amount:120, status:'active', placed:'2026-10-23', card:'Mastercard credit ending 4444', refreshes:[]}},
+  {id:'r4', lid:'switch', start:'2026-10-27', days:5, phase:'requested', hold:{amount:120, status:'pending'}},
+  {id:'r5', lid:'calc', start:'2026-10-06', days:4, phase:'returned', returnedOn:'2026-10-10',
+   hold:{amount:40, status:'released', placed:'2026-10-06', released:'2026-10-11', refreshes:[], reason:'Returned in the same condition. Nothing was charged.'}},
+  {id:'r6', lid:'scooter', start:'2026-09-26', days:2, phase:'returned', returnedOn:'2026-09-30',
+   hold:{amount:125, status:'captured', placed:'2026-09-26', released:'2026-10-02', captured:35, refreshes:[],
+   reason:'Returned 2 days late. Ana filed a late-return claim for the 2 extra days ($30) plus $5 to recharge the battery. $35 of the $125 hold was charged and the other $90 was released.'}}
+];
+const rent = id => RENTALS.find(r => r.id === id);
+const endOf = r => addDays(D(r.start), r.days);
+const charge = (l, days) => l.price * days + SERVICE;
+
+const LENDING = [
+  {item:'Yamaha FG800 acoustic guitar', who:'Jae P.', start:'2026-10-20', days:7, fee:63, hold:{amount:80, status:'active', expires:'2026-10-27'}},
+  {item:'Coleman 48-quart cooler', who:'Rosa D.', start:'2026-10-10', days:2, fee:10, hold:{amount:30, status:'released'}},
+  {item:'Ring light with tripod', who:'Ben W.', start:'2026-09-30', days:3, fee:12, hold:{amount:15, status:'captured', captured:15}},
+  {item:'Yamaha FG800 acoustic guitar', who:'Chris L.', start:'2026-09-12', days:3, fee:27, hold:{amount:80, status:'released'}}
+];
+
+let NOTIFS = [
+  {rid:'r1', tone:'hold', title:'Your hold renews tomorrow. No charge.', body:'Epson projector · the $100 hold refreshes Sun, Oct 25.', when:'Today, 9:00 AM'},
+  {rid:'r2', tone:'bad', title:'Your hold refresh didn’t go through', body:'2-person tent · update your card to keep the $35 hold active.', when:'Today, 6:05 AM'},
+  {rid:'r5', tone:'ok', title:'Your $40 hold has been released', body:'TI-84 Plus CE came back in the same condition.', when:'Oct 11'}
+];
+let unread = 2;
+
+const TEST_CARDS = {
+  '4242424242424242': {brand:'Visa', type:'credit', ok:true},
+  '5555555555554444': {brand:'Mastercard', type:'credit', ok:true},
+  '4000056655665556': {brand:'Visa', type:'debit', ok:true},
+  '4000000000000002': {brand:'Visa', type:'credit', ok:false}
+};
+
+const S = {
+  view:'browse', listingId:'camera', rentalId:'r3', days:3,
+  filters:{q:'', cat:'All', maxPrice:20, hold:'any'},
+  req:null, ret:null, card:null, updating:false, flash:null,
+  dashRole:'borrow', notifOpen:false,
+  create:{name:'Polaroid Now instant camera', cat:'Electronics', value:110, price:6, spot:'Student Union, main entrance', cond:'Like new', hold:null, touched:false}
+};
+
+/* ---------- shared pieces ---------- */
+const tip = id => `<span class="tip"><button type="button" class="tip-btn" data-action="tip" aria-label="What is a protection hold?" aria-describedby="${id}">i</button><span class="tip-pop" role="tooltip" id="${id}">A temporary hold on your card, like at a vending machine. It disappears when you return the item in the same condition.</span></span>`;
+const holdBox = (amount, id) => `<div class="holdbox"><span class="holdbox-ico">${shield(20)}</span><p><b>${usd0(amount)} hold.</b> Not charged unless something goes wrong.</p>${tip(id)}</div>`;
+const demo = inner => `<div class="demo"><span class="demo-label">Prototype controls</span><div class="demo-btns">${inner}</div></div>`;
+
+function costSummary(l, days){
+  const f = l.price * days;
+  return `<div class="sum" role="group" aria-label="Cost summary">
+    <div class="sum-row"><span>Rental fee · ${usd0(l.price)} × ${plural(days,'day')}</span><span>${usd(f)}</span></div>
+    <div class="sum-row"><span>Service fee</span><span>${usd(SERVICE)}</span></div>
+    <div class="sum-row sum-total"><span>You'll be charged</span><span>${usd(f + SERVICE)}</span></div>
+    <div class="sum-hold">
+      <div class="sum-row"><span>Protection hold<span class="tag-held">Held, not charged</span></span><span class="held-amt">${usd0(l.hold)}</span></div>
+      <p class="hint">Not part of what you pay. Released within 3 days of a clean return.</p>
+    </div>
+  </div>`;
+}
+const cancelRules = () => `<div class="cancel"><h3 class="h-small">Cancellation rules</h3><ul>
+  <li><b>Before the lender approves:</b> cancel anytime. Nothing has been charged or held.</li>
+  <li><b>More than 24 hours before pickup:</b> full refund of the rental fee. The hold is released right away.</li>
+  <li><b>Within 24 hours of pickup:</b> half the rental fee is refunded. The hold is released right away.</li>
+  <li><b>No-show at pickup:</b> the rental fee isn't refunded. The hold is still released. It's never used for cancellations.</li>
+</ul></div>`;
+
+function holdBadge(h){
+  if (h.status === 'pending') return `<span class="badge b-pend">Pending</span>`;
+  if (h.status === 'active') return `<span class="badge b-active">Active · expires ${fmtD(holdExpires(h))}</span>`;
+  if (h.status === 'released') return `<span class="badge b-rel">Released</span>`;
+  return `<span class="badge b-cap">Captured: ${usd0(h.captured)}</span>`;
+}
+function refreshChip(h){
+  if (h.status !== 'active') return '';
+  const f = (h.refreshes || []).find(f => f.state !== 'done');
+  if (!f) return '';
+  if (f.state === 'failed') return `<span class="badge b-fail">Refresh failed</span>`;
+  return `<span class="badge b-soft">Refreshes ${relD(D(f.date)).toLowerCase() === 'tomorrow' ? 'tomorrow' : fmtD(D(f.date))}</span>`;
+}
+function phaseLine(r){
+  const s = D(r.start), e = endOf(r);
+  if (r.phase === 'requested') return `Requested for ${fmtD(s)} – ${fmtD(e)} · waiting for approval`;
+  if (r.phase === 'booked') return `Pickup ${fmtW(s)} · return by ${fmtW(e)}`;
+  if (r.phase === 'out') return `${fmtD(s)} – ${fmtD(e)} · due back ${fmtW(e)}`;
+  return `${fmtD(s)} – ${fmtD(e)} · ${r.notReturned ? 'not returned' : 'returned'}`;
+}
+const miniItem = (l, sub) => `<div class="mini"><span class="tile sm" style="--h:${l.h}">${icon(l.icon,30)}</span><div><div class="mini-title">${esc(l.short)}</div><div class="mini-sub">${sub}</div></div></div>`;
+const photoTile = (l, cap, mark = false) => `<figure class="ph"><span class="ph-img tile" style="--h:${l.h}">${icon(l.icon,40)}${mark ? '<span class="ph-mark"></span>' : ''}</span><figcaption>${cap}</figcaption></figure>`;
+
+function agreementHTML(l, days, start){
+  const end = addDays(start, days), name = first(l.lender), H = usd0(l.hold);
+  const refresh = refreshPlan(TODAY, end).length > 0;
+  return `<ol class="agree">
+    <li><b>The hold isn't a charge.</b> ${H} is held on your card while you have the ${esc(l.short)}. It's set aside, not paid to anyone.</li>
+    <li><b>Clean return, hold released.</b> Bring it back to ${esc(l.spot)} by ${fmtW(end)} in the same condition, and the hold is released within 3 days.</li>
+    <li><b>Damage, late return or no return.</b> ${name} can file a claim. If the claim is approved, up to ${H}, the held amount, can be charged to your card.</li>
+    <li><b>Destroyed or not returned.</b> You may owe the item's full replacement cost (${usd0(l.value)}), even though that's more than the hold.</li>
+    <li><b>Photos are evidence.</b> You and ${name} can both add condition photos at pickup and at return. They're used if there's ever a claim.</li>
+    ${refresh ? `<li><b>Longer rentals.</b> Holds last about 7 days, so yours refreshes automatically. We remind you the day before. A refresh never charges you.</li>` : ''}
+    <li><b>Cancelling.</b> If you cancel, the hold is released right away. Rental fee refunds follow the cancellation rules.</li>
+  </ol>`;
+}
+
+/* ---------- card form ---------- */
+function resetCard(keepName){
+  const name = keepName && S.card ? S.card.name : '';
+  S.card = {num:'', name, exp:'', cvc:'', zip:'', status:'idle', err:''};
+}
+const fmtCard = d => d.replace(/(\d{4})(?=\d)/g, '$1 ');
+function cardTypeNotice(t, hold){
+  if (t && t.type === 'debit') return `<div class="alert alert-hold">${'<span class="alert-ico">' + ico.card + '</span>'}<div><b>This is a debit card</b><p>Debit cards: the held amount is temporarily unavailable in your account. ${usd0(hold)} will be set aside in your bank account until the hold is released.</p><div><button type="button" class="btn btn-sm" data-action="new-card">Use a different card</button></div></div></div>`;
+  return `<p class="note">Debit cards: the held amount is temporarily unavailable in your account. A credit card avoids that.</p>`;
+}
+function cardForm(ctx, hold, chargeAmt){
+  const c = S.card, t = TEST_CARDS[c.num];
+  const label = c.status === 'processing' ? 'Placing hold…'
+    : c.status === 'declined' ? 'Try again'
+    : chargeAmt ? `Pay ${usd(chargeAmt)} and place ${usd0(hold)} hold` : `Place ${usd0(hold)} hold`;
+  const err = c.status === 'declined'
+    ? `<div class="alert alert-bad" role="alert"><span class="alert-ico">${ico.alert}</span><div><b>Your card couldn't hold ${usd0(hold)}</b><p>Your bank declined the protection hold. Nothing was charged. ${ctx === 'request' ? 'Your request is paused until a hold goes through.' : 'Your rental needs an active hold.'}</p><p>Try a different card, or ask your bank to allow temporary holds.</p><div><button type="button" class="btn btn-sm" data-action="new-card">Use a different card</button></div></div></div>`
+    : c.err ? `<p class="err-text" role="alert">${esc(c.err)}</p>` : '';
+  return `<form id="cardform" class="cardform" data-ctx="${ctx}" novalidate>
+    <div class="field"><label for="cc-name">Name on card</label><input type="text" id="cc-name" autocomplete="off" value="${esc(c.name)}" placeholder="Alex Rivera"></div>
+    <div class="field"><label for="cc-num">Card number</label><div class="ccwrap"><input type="text" id="cc-num" inputmode="numeric" autocomplete="off" placeholder="4242 4242 4242 4242" value="${fmtCard(c.num)}"><span class="cc-brand" id="cc-brand">${t ? t.brand + ' ' + t.type : ''}</span></div></div>
+    <div class="row3">
+      <div class="field"><label for="cc-exp">Expiry</label><input type="text" id="cc-exp" inputmode="numeric" autocomplete="off" placeholder="MM/YY" value="${esc(c.exp)}"></div>
+      <div class="field"><label for="cc-cvc">CVC</label><input type="text" id="cc-cvc" inputmode="numeric" autocomplete="off" placeholder="123" value="${esc(c.cvc)}"></div>
+      <div class="field"><label for="cc-zip">ZIP</label><input type="text" id="cc-zip" inputmode="numeric" autocomplete="off" placeholder="12345" value="${esc(c.zip)}"></div>
+    </div>
+    <div id="cc-type">${cardTypeNotice(t, hold)}</div>
+    <div class="testcards"><span>Fake test cards:</span>
+      <button type="button" data-action="fill-card" data-n="4242424242424242">Visa credit</button>
+      <button type="button" data-action="fill-card" data-n="4000056655665556">Visa debit</button>
+      <button type="button" data-action="fill-card" data-n="4000000000000002">Declines the hold</button>
+    </div>
+    <div id="cc-err">${err}</div>
+    <div class="row"><button class="btn btn-primary" type="submit" ${c.status === 'processing' ? 'disabled' : ''}>${c.status === 'processing' ? '<span class="spinner" style="width:16px;height:16px;border-width:2px"></span>' : ''}${label}</button>
+    ${c.num && c.status !== 'declined' ? `<button type="button" class="linkbtn" data-action="new-card">Use a different card</button>` : ''}</div>
+    <p class="hint">The hold is checked with your bank now. ${chargeAmt ? `Only ${usd(chargeAmt)} is charged.` : 'Nothing is charged.'}</p>
+  </form>`;
+}
+const cardLabel = () => { const t = TEST_CARDS[S.card.num]; return `${t.brand} ${t.type} ending ${S.card.num.slice(-4)}`; };
+
+function placeHold(ctx){
+  const c = S.card;
+  c.name = $('#cc-name').value.trim(); c.exp = $('#cc-exp').value.trim(); c.cvc = $('#cc-cvc').value.trim(); c.zip = $('#cc-zip').value.trim();
+  const t = TEST_CARDS[c.num];
+  c.err = '';
+  if (!c.name) c.err = 'Enter the name on the card.';
+  else if (!t) c.err = c.num.length < 15 ? 'Enter a card number. Use one of the fake test cards below.' : 'That isn’t one of the test cards. This prototype only accepts the fake numbers below, so please don’t enter a real card.';
+  else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(c.exp)) c.err = 'Enter the expiry date as MM/YY.';
+  else if (!/^\d{3,4}$/.test(c.cvc)) c.err = 'Enter the 3-digit security code from the back of the card.';
+  if (c.err) { c.status = 'idle'; render(); return; }
+  c.status = 'processing'; render();
+  setTimeout(() => {
+    if (!t.ok) { c.status = 'declined'; render(); return; }
+    c.status = 'ok';
+    if (ctx === 'request') completeRequest(); else completeCardUpdate();
+    render();
+  }, 1100);
+}
+
+/* ---------- views ---------- */
+function filtered(){
+  const f = S.filters, q = f.q.trim().toLowerCase();
+  return LISTINGS.filter(l =>
+    (f.cat === 'All' || l.cat === f.cat) &&
+    l.price <= f.maxPrice &&
+    (f.hold === 'any' || l.hold <= +f.hold) &&
+    (!q || (l.title + ' ' + l.cat).toLowerCase().includes(q)));
+}
+function cardHTML(l, tag = 'button'){
+  const attrs = tag === 'button' ? ` data-go="listing" data-id="${l.id}"` : '';
+  return `<${tag} class="lcard"${attrs}>
+    <span class="tile" style="--h:${l.h}">${icon(l.icon,56)}</span>
+    <span class="lcard-body">
+      <span class="lcard-title">${esc(l.title)}</span>
+      <span class="lcard-meta">${esc(l.lender)} · ★ ${l.rating.toFixed(1)} · ${l.dist} mi</span>
+      <span class="lcard-foot"><span class="price"><b>${usd0(l.price)}</b>/day</span><span class="hold-mini">${usd0(l.hold)} hold</span></span>
+    </span></${tag}>`;
+}
+function gridHTML(){
+  const list = filtered();
+  return list.length ? list.map(l => cardHTML(l)).join('') : `<div class="empty">No items match these filters. Try a higher price or a larger protection hold.</div>`;
+}
+function updateGrid(){
+  const g = $('#grid'); if (!g) return;
+  g.innerHTML = gridHTML();
+  $('#count').textContent = plural(filtered().length, 'item') + ' near campus';
+}
+
+function viewBrowse(){
+  const f = S.filters, cats = ['All', ...new Set(LISTINGS.map(l => l.cat))];
+  const holdOpts = [['any','Any amount'],['15','Up to $15'],['50','Up to $50'],['150','Up to $150']];
+  return `<section class="wrap intro">
+    <p class="eyebrow">Students lending to students</p>
+    <h1>Borrow it for the weekend. Bring it back the same way.</h1>
+    <p class="lede">Every rental comes with a protection hold: a temporary hold on your card that's released when the item comes back in the same condition. Nothing is charged unless something goes wrong.</p>
+  </section>
+  <div class="wrap browse">
+    <aside class="filters" aria-label="Filters">
+      <div class="field"><label for="f-q">Search</label><input type="search" id="f-q" placeholder="Calculator, tent, projector…" value="${esc(f.q)}"></div>
+      <div class="fgroup"><div class="flabel">Category</div><div class="chips">${cats.map(c => `<button class="chip ${f.cat === c ? 'on' : ''}" data-action="cat" data-cat="${c}" aria-pressed="${f.cat === c}">${c}</button>`).join('')}</div></div>
+      <div class="fgroup"><div class="flabel-row"><label class="flabel" for="f-price">Price per day</label><span class="hint" id="f-price-v">up to $${f.maxPrice}</span></div><input type="range" id="f-price" min="2" max="20" step="1" value="${f.maxPrice}"></div>
+      <fieldset class="fgroup"><legend class="flabel">Protection hold</legend>
+        ${holdOpts.map(([v,t]) => `<label class="radio"><input type="radio" name="f-hold" id="f-hold-${v}" value="${v}" ${f.hold === v ? 'checked' : ''}> ${t}</label>`).join('')}
+        <p class="hint">The most that could be held on your card. It's only charged if something goes wrong.</p>
+      </fieldset>
+    </aside>
+    <section class="results" aria-label="Listings">
+      <div class="results-head"><span id="count" aria-live="polite">${plural(filtered().length,'item')} near campus</span><button class="linkbtn" data-go="safety">How the protection hold works</button></div>
+      <div class="grid" id="grid">${gridHTML()}</div>
+    </section>
+  </div>`;
+}
+
+function viewListing(){
+  const l = lst(S.listingId), days = S.days, start = addDays(TODAY, 1), end = addDays(start, days);
+  const needsRefresh = refreshPlan(TODAY, end).length > 0;
+  return `<div class="wrap page">
+    <button class="back" data-go="browse">← Browse</button>
+    <div class="ld">
+      <div class="ld-main">
+        <div class="ld-media tile" style="--h:${l.h}">${icon(l.icon,120)}</div>
+        <p class="eyebrow">${l.cat} · ${l.cond}</p>
+        <h1 class="ld-title">${esc(l.title)}</h1>
+        <p class="ld-desc">${esc(l.desc)}</p>
+        <dl class="facts">
+          <div><dt>Lender</dt><dd>${esc(l.lender)} · ★ ${l.rating.toFixed(1)} · ${l.trips} rentals</dd></div>
+          <div><dt>Pickup spot</dt><dd>${esc(l.spot)} · ${l.dist} mi away</dd></div>
+          <div><dt>Estimated value</dt><dd>${usd0(l.value)}</dd></div>
+          <div><dt>Protection hold</dt><dd><span class="held-amt">${usd0(l.hold)}</span> <span class="hint">held, not charged</span></dd></div>
+        </dl>
+      </div>
+      <aside class="book panel" aria-label="Book this item">
+        <div class="book-price"><b>${usd0(l.price)}</b> / day</div>
+        ${holdBox(l.hold, 'tip-ld')}
+        <div class="days">
+          <div><div class="flabel">Rental length</div><div class="days-dates">${fmtW(start)} → ${fmtW(end)}</div></div>
+          <div class="stepper-num"><button data-action="days" data-d="-1" id="days-minus" aria-label="One day fewer" ${days <= 1 ? 'disabled' : ''}>−</button><span aria-live="polite">${plural(days,'day')}</span><button data-action="days" data-d="1" id="days-plus" aria-label="One day more" ${days >= 21 ? 'disabled' : ''}>+</button></div>
+        </div>
+        ${costSummary(l, days)}
+        ${needsRefresh ? `<p class="note">Holds last about 7 days. On this rental the hold refreshes automatically, and we remind you the day before. No charge.</p>` : ''}
+        <button class="btn btn-primary btn-block" data-action="start-request">Request to rent</button>
+        <p class="hint center">Nothing is charged or held until ${first(l.lender)} approves.</p>
+        ${cancelRules()}
+      </aside>
+    </div>
+  </div>`;
+}
+
+const STEPS = ['Request', 'Lender approval', 'Agreement', 'Protection hold', 'Confirmed'];
+function viewRequest(){
+  const q = S.req, l = lst(q.lid), start = D(q.start), end = addDays(start, q.days), name = first(l.lender);
+  const total = charge(l, q.days);
+  const declined = q.step === 3 && S.card && S.card.status === 'declined';
+  const steps = `<ol class="steps" aria-label="Progress">${STEPS.map((s, i) => {
+    const cls = i < q.step ? 'done' : i === q.step ? ('cur' + (declined ? ' err' : '')) : '';
+    return `<li class="${cls}" ${i === q.step ? 'aria-current="step"' : ''}><span class="steps-n">${i < q.step ? '✓' : i + 1}</span><span>${s}</span></li>`;
+  }).join('')}</ol>`;
+  let body = '';
+  if (q.step === 0) body = `<div class="panel pad">
+      <h2>Send a request to ${name}</h2>
+      <p class="muted">${fmtW(start)} → ${fmtW(end)} · pickup at ${esc(l.spot)}</p>
+      <div class="field"><label for="req-msg">Message to ${name}</label><textarea id="req-msg" rows="4">${esc(q.msg)}</textarea></div>
+      <div class="alert"><span class="alert-ico">${shield(20)}</span><div><p>Sending a request doesn't charge or hold anything. You place the protection hold only after ${name} approves.</p></div></div>
+      <div><button class="btn btn-primary" data-action="req-send">Send request</button></div>
+    </div>`;
+  if (q.step === 1) body = `<div class="panel pad">
+      <div class="wait-row"><span class="spinner"></span><div><h2>Waiting for ${name} to approve</h2><p class="muted">${name} usually replies within 2 hours. We'll notify you.</p></div></div>
+      <div class="kv"><span>Protection hold</span><span class="row"><span class="badge b-pend">Pending</span><span class="hint">Not placed yet</span></span></div>
+      <div class="kv"><span>Charged so far</span><span>$0.00</span></div>
+    </div>
+    ${demo(`<button class="btn btn-sm" data-action="req-approve">Simulate: ${name} approves</button>`)}
+    <div><button class="linkbtn" data-action="req-cancel">Cancel request</button></div>`;
+  if (q.step === 2) body = `<div class="panel pad">
+      <p class="eyebrow">${name} approved your request</p>
+      <h2>Rental agreement</h2>
+      <p class="muted">The plain-language version. Read it before you place the hold.</p>
+      ${agreementHTML(l, q.days, start)}
+      <label class="check"><input type="checkbox" id="agree" ${q.agreed ? 'checked' : ''}> I've read the agreement and accept it.</label>
+      <div><button class="btn btn-primary" data-action="req-agree" id="agree-btn" ${q.agreed ? '' : 'disabled'}>Continue to protection hold</button></div>
+    </div>`;
+  if (q.step === 3) body = `<div class="panel pad">
+      <h2>Place protection hold</h2>
+      <div class="breakdown">
+        <div class="bd bd-charge"><span class="mini-label">You'll be charged</span><span class="bd-amt">${usd(total)}</span><span class="bd-sub">Rental and service fee</span></div>
+        <div class="bd bd-hold"><span class="mini-label">Held, not charged</span><span class="bd-amt">${usd0(l.hold)}</span><span class="bd-sub">Released automatically on return</span></div>
+      </div>
+      <p class="plain">You'll be charged: ${usd(total)} rental. Held, not charged: ${usd0(l.hold)}.</p>
+      ${cardForm('request', l.hold, total)}
+    </div>`;
+  if (q.step === 4) {
+    const r = rent(q.rentalId), h = r.hold, plan = (h.refreshes || []).map(f => fmtD(D(f.date)));
+    body = `<div class="panel pad success">
+      <span class="success-ico">${ico.check}</span>
+      <h2>Hold placed. Released automatically on return.</h2>
+      <div class="money2">
+        <div class="mcol"><span class="mini-label">Charged</span><span class="mbig">${usd(total)}</span><span class="hint">Rental and service fee, paid today</span></div>
+        <div class="mcol held"><span class="mini-label">Held, not charged</span><span class="mbig">${usd0(h.amount)}</span><span>${holdBadge(h)}</span><span class="hint">On your ${esc(h.card)}</span></div>
+      </div>
+      <p>Pick up the ${esc(l.short)} on ${fmtW(start)} at ${esc(l.spot)}. Return it by ${fmtW(end)} in the same condition and the ${usd0(h.amount)} hold is released within 3 days.</p>
+      ${plan.length ? `<div class="alert alert-hold"><span class="alert-ico">${ico.bell}</span><div><b>Your hold refreshes on ${plan.join(' and ')}</b><p>Holds last about 7 days, so we renew yours automatically. We'll remind you the day before. No charge.</p></div></div>` : ''}
+      <div class="row"><button class="btn btn-primary" data-go="rental" data-id="${r.id}">View rental</button><button class="btn" data-go="browse">Keep browsing</button></div>
+    </div>`;
+  }
+  return `<div class="wrap page narrow">
+    ${q.step < 4 ? `<button class="back" data-go="listing" data-id="${l.id}">← ${esc(l.short)}</button>` : ''}
+    <h1 class="h-page">Rental request</h1>
+    ${steps}
+    <div class="req-grid">
+      <div class="req-main">${body}</div>
+      <aside class="req-side panel" aria-label="Summary">
+        ${miniItem(l, `${esc(l.lender)} · ${fmtD(start)} – ${fmtD(end)}`)}
+        ${costSummary(l, q.days)}
+        ${cancelRules()}
+      </aside>
+    </div>
+  </div>`;
+}
+function completeRequest(){
+  const q = S.req, l = lst(q.lid), end = addDays(D(q.start), q.days);
+  const hold = {amount:l.hold, status:'active', placed:iso(TODAY), card:cardLabel(), refreshes:refreshPlan(TODAY, end)};
+  if (q.rentalId) { const r = rent(q.rentalId); r.phase = 'booked'; r.hold = hold; }
+  else {
+    const id = 'r' + Date.now().toString(36);
+    RENTALS.unshift({id, lid:l.id, start:q.start, days:q.days, phase:'booked', hold});
+    q.rentalId = id;
+  }
+  q.step = 4;
+  toast(`Hold placed. ${usd0(l.hold)} held, not charged.`);
+}
+
+function viewRentals(){
+  const cur = RENTALS.filter(r => r.phase !== 'returned'), past = RENTALS.filter(r => r.phase === 'returned');
+  return `<div class="wrap page">
+    <h1 class="h-page">My rentals</h1>
+    ${rentalAlerts()}
+    <h2 class="h-sec">Current</h2>
+    <div class="rlist">${cur.length ? cur.map(rowHTML).join('') : '<div class="empty">No current rentals.</div>'}</div>
+    <h2 class="h-sec">Past</h2>
+    <div class="rlist">${past.map(rowHTML).join('')}</div>
+  </div>`;
+}
+function rentalAlerts(){
+  return RENTALS.filter(r => r.hold.status === 'active').map(r => {
+    const l = lst(r.lid), f = (r.hold.refreshes || []).find(f => f.state !== 'done');
+    if (!f) return '';
+    if (f.state === 'failed') return `<div class="alert alert-bad" role="alert"><span class="alert-ico">${ico.alert}</span><div><b>Your hold on the ${esc(l.short)} couldn't be renewed</b><p>Your card declined the ${usd0(r.hold.amount)} refresh. Nothing was charged. Update your card to keep the rental in good standing.</p><div><button class="btn btn-sm btn-danger" data-go="rental" data-id="${r.id}" data-update="1">Update card</button></div></div></div>`;
+    if (same(D(f.date), addDays(TODAY,1))) return `<div class="alert alert-hold"><span class="alert-ico">${ico.bell}</span><div><b>Your hold renews tomorrow. No charge.</b><p>${esc(l.short)} · the ${usd0(r.hold.amount)} hold refreshes ${fmtW(D(f.date))} so it stays active until your return.</p></div></div>`;
+    return '';
+  }).join('');
+}
+function rowHTML(r){
+  const l = lst(r.lid), h = r.hold;
+  const charged = r.phase === 'requested' ? 0 : charge(l, r.days) + (h.captured || 0);
+  return `<button class="rrow" data-go="rental" data-id="${r.id}">
+    <span class="tile sm" style="--h:${l.h}">${icon(l.icon,30)}</span>
+    <span class="rrow-main"><span class="rrow-title">${esc(l.short)}</span><span class="rrow-sub">${esc(l.lender)} · ${phaseLine(r)}</span></span>
+    <span class="rrow-money"><span><span class="mini-label">Charged</span>${usd(charged)}</span><span><span class="mini-label">Hold</span><span class="held-amt">${usd0(h.amount)}</span></span></span>
+    <span class="rrow-badges">${holdBadge(h)}${refreshChip(h)}</span>
+  </button>`;
+}
+
+function timelineHTML(r){
+  const h = r.hold, l = lst(r.lid), end = endOf(r), ev = [];
+  if (h.status === 'pending') {
+    return `<ol class="tl"><li class="now"><time>Now</time><span class="dot"></span><div><b>Waiting for ${first(l.lender)}</b><span class="x">Nothing is charged or held yet.</span></div></li>
+      <li class="next"><time>Next</time><span class="dot"></span><div><b>You place the hold</b><span class="x">${usd0(h.amount)} held, not charged, after approval.</span></div></li></ol>`;
+  }
+  const st = d => same(d, TODAY) ? 'now' : d < TODAY ? 'done' : 'next';
+  ev.push({d:D(h.placed), t:'Hold placed', x:`${usd0(h.amount)} held, not charged. Lasts about 7 days.`, s:'done'});
+  (h.refreshes || []).forEach(f => {
+    const d = D(f.date), rem = addDays(d, -1);
+    if (!f.fixed) ev.push({d:rem, t:'Reminder sent', x:'“Your hold renews tomorrow. No charge.”', s: rem <= TODAY ? 'done' : 'next'});
+    if (f.state === 'done') ev.push({d, t:'Hold refreshed', x: f.fixed ? 'After your card update. No charge.' : 'No charge. Same amount, new expiry.', s:'done'});
+    else if (f.state === 'failed') ev.push({d, t:'Hold refresh failed', x:'Your card declined the renewal. Nothing was charged.', s:'fail'});
+    else ev.push({d, t:'Hold refresh', x:'Automatic. No charge.', s:'next'});
+  });
+  if (r.phase === 'returned') {
+    ev.push({d:D(r.returnedOn), t: r.notReturned ? 'Claim closed' : 'Returned', x: r.notReturned ? 'Item marked as not returned.' : `At ${l.spot}.`, s:'done'});
+    if (h.status === 'released') ev.push({d:D(h.released), t:'Hold released', x:'Nothing was charged.', s:'done'});
+    else ev.push({d:D(h.released), t:`Hold captured: ${usd0(h.captured)}`, x: h.amount > h.captured ? `The other ${usd0(h.amount - h.captured)} was released.` : 'The full hold was charged.', s:'cap'});
+  } else {
+    ev.push({d:end, t:'Return due', x:`Bring it to ${l.spot}.`, s: st(end)});
+    ev.push({d:addDays(end,3), t:'Hold released', x:'Within 3 days of a clean return.', s:'next'});
+  }
+  ev.sort((a, b) => a.d - b.d);
+  return `<ol class="tl">${ev.map(e => `<li class="${e.s}"><time>${fmtD(e.d)}</time><span class="dot"></span><div><b>${e.t}</b><span class="x">${esc(e.x)}</span></div></li>`).join('')}</ol>`;
+}
+
+function viewRental(){
+  const r = rent(S.rentalId), l = lst(r.lid), h = r.hold, start = D(r.start), end = endOf(r), name = first(l.lender);
+  const rc = charge(l, r.days);
+  const failed = (h.refreshes || []).find(f => f.state === 'failed');
+  const sched = (h.refreshes || []).find(f => f.state === 'scheduled');
+  let alert = '';
+  if (S.flash) alert += `<div class="alert alert-ok" role="status"><span class="alert-ico">${ico.check}</span><div><b>${S.flash.title}</b><p>${S.flash.text}</p></div></div>`;
+  if (h.status === 'active' && failed) {
+    alert += `<div class="alert alert-bad" role="alert"><span class="alert-ico">${ico.alert}</span><div><b>Your hold couldn't be renewed</b><p>We tried to refresh your ${usd0(h.amount)} hold on ${fmtW(D(failed.date))} and your ${esc(h.card || 'card')} declined it. Nothing was charged. Update your card so the rental stays in good standing.</p>${S.updating ? '' : `<div><button class="btn btn-sm btn-danger" data-action="update-card">Update card</button></div>`}</div></div>`;
+    if (S.updating) alert += `<div class="panel pad"><h2 class="h-small">Update your card</h2><p class="hint">We'll place a fresh ${usd0(h.amount)} hold on the new card. This is a hold, not a charge.</p>${cardForm('update', h.amount, 0)}</div>`;
+  } else if (h.status === 'active' && sched && same(D(sched.date), addDays(TODAY,1))) {
+    alert += `<div class="alert alert-hold"><span class="alert-ico">${ico.bell}</span><div><b>Your hold renews tomorrow. No charge.</b><p>Your ${usd0(h.amount)} hold refreshes on ${fmtW(D(sched.date))} so it stays active until you return the ${esc(l.short)} on ${fmtW(end)}.</p></div></div>`;
+  }
+
+  let chargedCol, heldCol;
+  if (r.phase === 'requested') {
+    chargedCol = `<div class="mcol"><span class="mini-label">Charged</span><span class="mbig">$0.00</span><span class="hint">You'll pay ${usd(rc)} after ${name} approves.</span></div>`;
+    heldCol = `<div class="mcol held"><span class="mini-label">Protection hold</span><span class="mbig">${usd0(h.amount)}</span><span>${holdBadge(h)}</span><span class="hint">Not placed yet. You place it after ${name} approves.</span></div>`;
+  } else {
+    const capturedLine = h.status === 'captured' ? `<div class="sum-row cap"><span>Captured from hold</span><span>${usd(h.captured)}</span></div>` : '';
+    chargedCol = `<div class="mcol"><span class="mini-label">Charged</span><span class="mbig">${usd(rc + (h.captured || 0))}</span>
+      <div class="sum"><div class="sum-row"><span>Rental ${usd0(l.price)} × ${plural(r.days,'day')} + service fee</span><span>${usd(rc)}</span></div>${capturedLine}</div></div>`;
+    let heldBody;
+    if (h.status === 'active') heldBody = `<span class="mini-label">Held, not charged</span><span class="mbig">${usd0(h.amount)}</span><span class="row">${holdBadge(h)}${refreshChip(h)}</span><span class="hint">On your ${esc(h.card)}. Released within 3 days of a clean return.</span>`;
+    else if (h.status === 'released') heldBody = `<span class="mini-label">Hold released</span><span class="mbig">${usd0(h.amount)}</span><span>${holdBadge(h)}</span><span class="hint">Released ${fmtD(D(h.released))}. ${esc(h.reason || 'Nothing was charged.')}</span>`;
+    else heldBody = `<span class="mini-label">Hold</span><span class="mbig">${usd0(h.amount)}</span><span>${holdBadge(h)}</span><div class="sum"><div class="sum-row cap"><span>Captured</span><span>${usd0(h.captured)}</span></div><div class="sum-row"><span>Released</span><span>${usd0(h.amount - h.captured)}</span></div></div><span class="hint">${esc(h.reason || '')}</span>`;
+    heldCol = `<div class="mcol held">${heldBody}</div>`;
+  }
+
+  let actions = '';
+  if (r.phase === 'out' || r.phase === 'booked') actions += `<button class="btn btn-primary" data-action="start-return">Start return</button>`;
+  actions += `<button class="btn" data-action="msg">Message ${name}</button>`;
+  let demoBtns = '';
+  if (r.phase === 'requested') demoBtns = `<button class="btn btn-sm" data-action="sim-approve-pending">Simulate: ${name} approves</button>`;
+  if (h.status === 'active' && sched) demoBtns = `<button class="btn btn-sm" data-action="sim-refresh-ok">Simulate: refresh goes through</button><button class="btn btn-sm" data-action="sim-refresh-fail">Simulate: refresh fails</button>`;
+
+  return `<div class="wrap page">
+    <button class="back" data-go="rentals">← My rentals</button>
+    <div class="rd-head">
+      <span class="tile sm" style="--h:${l.h}">${icon(l.icon,36)}</span>
+      <div><h1 class="h-page">${esc(l.short)}</h1><p class="muted">From ${esc(l.lender)} · ${phaseLine(r)}</p><p class="hint">Pickup and return: ${esc(l.spot)}</p></div>
+      <div>${holdBadge(h)}</div>
+    </div>
+    ${alert}
+    <div class="money2">${chargedCol}${heldCol}</div>
+    <div class="row">${actions}</div>
+    ${demoBtns ? demo(demoBtns) : ''}
+    <div class="two">
+      <section class="stack"><h2 class="h-sec">Hold timeline</h2>${timelineHTML(r)}</section>
+      <section class="stack"><h2 class="h-sec">Agreement</h2>
+        <details class="agreement"><summary>Read the rental agreement</summary>${agreementHTML(l, r.days, start)}</details>
+        ${cancelRules()}
+      </section>
+    </div>
+  </div>`;
+}
+function settleRefresh(r){
+  const h = r.hold, exp = holdExpires(h);
+  if (!(h.refreshes || []).some(f => f.state !== 'done') && exp < endOf(r)) h.refreshes.push({date: iso(exp), state:'scheduled'});
+}
+function completeCardUpdate(){
+  const r = rent(S.rentalId), h = r.hold, f = h.refreshes.find(f => f.state === 'failed');
+  f.state = 'done'; f.date = iso(TODAY); f.fixed = true; h.card = cardLabel();
+  settleRefresh(r);
+  S.updating = false;
+  S.flash = {title:'Hold refreshed. No charge.', text:`Your ${usd0(h.amount)} hold is active on your ${h.card} until ${fmtW(holdExpires(h))}.`};
+  NOTIFS = NOTIFS.filter(n => !(n.rid === r.id && n.tone === 'bad'));
+  pushNotif({rid:r.id, tone:'ok', title:'Hold refreshed. No charge.', body:`${lst(r.lid).short} · ${usd0(h.amount)} hold active until ${fmtD(holdExpires(h))}.`});
+}
+
+/* ---------- return flow ---------- */
+const CLAIM_TYPES = {damage:'Damage', late:'Late return', notreturned:'Not returned or destroyed'};
+function claimDefaults(type, l){
+  if (type === 'late') return {amount: clamp(Math.ceil(l.price / 5) * 5, 5, l.hold), note:'It came back a day after the return date in our agreement. I’m asking for one extra day of rental.'};
+  if (type === 'notreturned') return {amount: l.hold, note:'The item hasn’t been returned and I haven’t heard back.'};
+  return {amount: clamp(25, 5, l.hold), note:'There’s a new crack on the side that isn’t in the pickup photos. The repair quote is $25.'};
+}
+function afterPhotos(l, removable){
+  return S.ret.after.map((p, i) => p.src
+    ? `<figure class="ph"><img src="${p.src}" alt="Your return photo ${i + 1}"><figcaption>By you</figcaption>${removable ? `<button class="ph-x" data-action="remove-photo" data-i="${i}" aria-label="Remove photo ${i + 1}">×</button>` : ''}</figure>`
+    : `<figure class="ph">${photoTile(l, 'By you').replace(/^<figure class="ph">|<\/figure>$/g, '')}${removable ? `<button class="ph-x" data-action="remove-photo" data-i="${i}" aria-label="Remove photo ${i + 1}">×</button>` : ''}</figure>`).join('');
+}
+function evidence(r, l, name){
+  return `<div class="evi">
+    <div><div class="flabel">Before · at pickup ${fmtD(D(r.start))}</div><div class="ph-row">${photoTile(l,'By you')}${photoTile(l,'By ' + name)}</div></div>
+    <div><div class="flabel">After · at return today</div><div class="ph-row">${afterPhotos(l, false)}${S.ret.claim.type !== 'notreturned' ? photoTile(l, 'By ' + name + ' · marked', S.ret.claim.type === 'damage') : ''}</div></div>
+  </div>`;
+}
+function viewReturn(){
+  const R = S.ret, r = rent(R.rid), l = lst(r.lid), h = r.hold, name = first(l.lender), H = usd0(h.amount);
+  const idx = {photos:0, inspect:1, claim_form:1, claim_open:1, review:1, released:2, decided:2}[R.stage];
+  const labels = ['Return photos', R.hadClaim ? 'Claim' : 'Lender check', 'Result'];
+  const steps = `<ol class="steps" aria-label="Progress">${labels.map((s, i) => `<li class="${i < idx ? 'done' : i === idx ? 'cur' : ''}"><span class="steps-n">${i < idx ? '✓' : i + 1}</span><span>${s}</span></li>`).join('')}</ol>`;
+  const barCls = h.status === 'released' ? 'released' : h.status === 'captured' ? 'captured' : '';
+  const barText = h.status === 'released' ? `Hold released · ${H}` : h.status === 'captured' ? `Hold captured: ${usd0(h.captured)} of ${H}` : `Held, not charged · ${H}`;
+  const bar = `<div class="holdbar ${barCls}">${shield(18)}<span>${barText}</span><span class="spacer"></span>${holdBadge(h)}</div>`;
+  const C = R.claim;
+  let body = '';
+
+  if (R.stage === 'photos') body = `<div class="panel pad">
+      <h2>Add return photos</h2>
+      <p class="muted">Take photos of the ${esc(l.short)} as you hand it back. Photos from pickup and return are the evidence if there's ever a question about condition.</p>
+      <div class="evi">
+        <div><div class="flabel">Before · at pickup ${fmtD(D(r.start))}</div><div class="ph-row">${photoTile(l,'By you')}${photoTile(l,'By ' + name)}</div></div>
+        <div><div class="flabel">After · at return</div><div class="ph-row">${afterPhotos(l, true)}
+          <label class="ph-add">Add photo<input type="file" id="ret-file" accept="image/*" multiple aria-label="Add return photos"></label>
+        </div><div><button class="linkbtn" data-action="sample-photo">Use a sample photo</button></div></div>
+      </div>
+      <div class="row"><button class="btn btn-primary" data-action="ret-handback" ${R.after.length ? '' : 'disabled'}>Hand back item</button>${R.after.length ? '' : '<span class="hint">Add at least one photo first.</span>'}</div>
+    </div>`;
+
+  if (R.stage === 'inspect') body = `<div class="panel pad">
+      <div class="wait-row"><span class="spinner"></span><div><h2>${name} is checking the ${esc(l.short)}</h2><p class="muted">Lenders have 24 hours to confirm the condition. Your ${H} hold stays in place until then. Nothing is charged.</p></div></div>
+    </div>
+    ${demo(`<button class="btn btn-sm" data-action="ret-clean">Simulate: same condition</button><button class="btn btn-sm" data-action="ret-claim">Simulate: ${name} files a claim</button>`)}`;
+
+  if (R.stage === 'released') body = `<div class="panel pad success">
+      <span class="success-ico">${ico.check}</span>
+      <span class="badge b-rel">Released</span>
+      <h2>Hold released</h2>
+      <p style="font-size:1.1rem"><b>Your ${H} hold has been released.</b></p>
+      <p class="muted">${name} confirmed the ${esc(l.short)} came back in the same condition. Nothing was charged for the hold. Your bank can take up to 3 days to show the full amount as available again.</p>
+      <div class="money2">
+        <div class="mcol"><span class="mini-label">Charged</span><span class="mbig">${usd(charge(l, r.days))}</span><span class="hint">Rental and service fee only</span></div>
+        <div class="mcol"><span class="mini-label">Hold</span><span class="mbig" style="color:var(--ok)">${H}</span><span class="hint">Released. $0 captured.</span></div>
+      </div>
+      <div class="row"><button class="btn btn-primary" data-go="rentals">Back to my rentals</button><button class="btn" data-go="browse">Browse more items</button></div>
+    </div>`;
+
+  if (R.stage === 'claim_form') {
+    const amtDisabled = C.type === 'notreturned';
+    body = `<div class="panel pad">
+      <span class="role lender">Lender view · what ${name} sees</span>
+      <h2>File a claim</h2>
+      <p class="muted">Claims are checked against the condition photos. You can claim up to the held amount, ${H}.</p>
+      <fieldset class="opt"><legend class="flabel" style="margin-bottom:8px">What happened?</legend>
+        ${Object.entries(CLAIM_TYPES).map(([k, t]) => `<label class="radio"><input type="radio" name="cl-type" id="cl-${k}" value="${k}" ${C.type === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}
+      </fieldset>
+      ${C.type === 'notreturned' ? `<div class="alert alert-bad"><span class="alert-ico">${ico.alert}</span><div><b>Items that aren't returned or are destroyed</b><p>The borrower may owe the full replacement cost of ${usd0(l.value)}. The ${H} hold covers the first part of it.</p></div></div>` : ''}
+      <div class="field"><label for="cl-amt">Amount to claim from the hold</label>
+        <div class="amt-row"><input type="range" id="cl-amt" min="5" max="${h.amount}" step="5" value="${C.amount}" ${amtDisabled ? 'disabled' : ''}><output id="cl-amt-v" class="held-amt">${usd0(C.amount)}</output></div>
+        <span class="hint">Up to ${H}, the held amount.</span></div>
+      <div class="stack"><div class="flabel">Condition photos</div>${evidence(r, l, name)}</div>
+      <div class="field"><label for="cl-note">What's wrong?</label><textarea id="cl-note" rows="3">${esc(C.note)}</textarea></div>
+      <div><button class="btn btn-primary" data-action="ret-file">File claim</button></div>
+    </div>`;
+  }
+
+  if (R.stage === 'claim_open') body = `<div class="alert alert-hold"><span class="alert-ico">${shield(20)}</span><div><b>${name} filed a claim for ${usd0(C.amount)}</b><p>Your ${H} hold is still held, not charged. Nothing is charged unless you accept the claim or the review approves it.</p></div></div>
+    <div class="panel pad">
+      <span class="role">Your view</span>
+      <h2>Review the claim</h2>
+      <div class="claimcard">
+        <dl><dt>Type</dt><dd>${CLAIM_TYPES[C.type]}</dd><dt>Amount</dt><dd><span class="held-amt">${usd0(C.amount)}</span> of your ${H} hold</dd><dt>Filed</dt><dd>Today</dd></dl>
+        <p class="quote">“${esc(C.note)}”</p>
+        ${evidence(r, l, name)}
+      </div>
+      <fieldset class="opt"><legend class="flabel" style="margin-bottom:8px">Your response</legend>
+        <label class="radio"><input type="radio" name="rs-choice" id="rs-accept" value="accept" ${R.resp.choice === 'accept' ? 'checked' : ''}><span>Accept the claim<small>${usd0(C.amount)} is charged from the hold.${h.amount > C.amount ? ` The other ${usd0(h.amount - C.amount)} is released.` : ''}</small></span></label>
+        <label class="radio"><input type="radio" name="rs-choice" id="rs-dispute" value="dispute" ${R.resp.choice === 'dispute' ? 'checked' : ''}><span>Dispute it<small>Tell us your side and add photos. The hold stays in place during the review.</small></span></label>
+      </fieldset>
+      ${R.resp.choice === 'dispute' ? `<div class="field"><label for="rs-note">Your side</label><textarea id="rs-note" rows="3" placeholder="For example: that mark is visible in my pickup photo.">${esc(R.resp.note)}</textarea></div>` : ''}
+      <div><button class="btn btn-primary" data-action="ret-respond">${R.resp.choice === 'accept' ? `Accept and pay ${usd0(C.amount)} from the hold` : 'Send my response'}</button></div>
+    </div>`;
+
+  if (R.stage === 'review') {
+    const due = addDays(TODAY, 3);
+    body = `<div class="panel pad">
+      <div class="row" style="justify-content:space-between"><h2>Dispute status</h2><span class="badge b-review">Under review</span></div>
+      <ol class="tl">
+        <li class="done"><time>Today</time><span class="dot"></span><div><b>Claim filed by ${name}</b><span class="x">${CLAIM_TYPES[C.type]} · ${usd0(C.amount)} requested from the hold</span></div></li>
+        <li class="done"><time>Today</time><span class="dot"></span><div><b>Your response sent</b><span class="x">${esc(R.resp.note || 'You disputed the claim.')}</span></div></li>
+        <li class="now"><time>Now</time><span class="dot"></span><div><b>KnightLend review</b><span class="x">We compare the pickup and return photos with both statements. Decision by ${fmtW(due)}.</span></div></li>
+        <li class="next"><time>${fmtD(due)}</time><span class="dot"></span><div><b>Decision</b><span class="x">Either the hold is released, or up to ${usd0(C.amount)} is captured.</span></div></li>
+      </ol>
+      <div class="money2">
+        <div class="mcol held"><span class="mini-label">Held, not charged</span><span class="mbig">${H}</span><span class="hint">Stays on hold during the review</span></div>
+        <div class="mcol"><span class="mini-label">Charged so far from the hold</span><span class="mbig">$0.00</span><span class="hint">Claim amount in question: ${usd0(C.amount)}</span></div>
+      </div>
+    </div>
+    ${demo(`<button class="btn btn-sm" data-action="ret-decide" data-k="release">Simulate decision: release hold</button><button class="btn btn-sm" data-action="ret-decide" data-k="capture">Simulate decision: capture ${usd0(C.amount)}</button>`)}`;
+  }
+
+  if (R.stage === 'decided') {
+    const cap = R.outcome === 'capture', Z = C.amount, rest = h.amount - Z;
+    const why = cap
+      ? (R.accepted ? `You accepted ${name}'s claim. ` : '') + ({
+          damage:`The return photos show damage that isn't in the pickup photos. ${usd0(Z)} of your ${H} hold was charged to cover the repair.`,
+          late:`The item came back after the return date in your agreement. ${usd0(Z)} of your ${H} hold was charged for the extra time.`,
+          notreturned:`The item wasn't returned, so your full ${H} hold was charged. Because the item is worth ${usd0(l.value)}, ${name} can ask you for the rest of the replacement cost (${usd(l.value - h.amount)}).`
+        })[C.type] + (cap && rest > 0 ? ` The other ${usd0(rest)} was released.` : '')
+      : ({
+          damage:`The pickup photos show the same mark, so it was there before your rental. The claim was closed and nothing was charged.`,
+          late:`Your return was logged on time at the pickup spot, so the claim was closed. Nothing was charged.`,
+          notreturned:`${name} confirmed the item was returned after all. The claim was closed and nothing was charged.`
+        })[C.type];
+    body = `<div class="panel pad success">
+      <span class="success-ico ${cap ? 'bad' : ''}">${cap ? ico.alert : ico.check}</span>
+      ${holdBadge(h)}
+      <h2>${cap ? `Hold captured: ${usd0(Z)}` : 'Hold released'}</h2>
+      ${cap ? '' : `<p style="font-size:1.1rem"><b>Your ${H} hold has been released.</b></p>`}
+      <p class="muted" style="max-width:62ch">${why}</p>
+      <div class="money2">
+        <div class="mcol"><span class="mini-label">Charged from the hold</span><span class="mbig" style="color:${cap ? 'var(--bad)' : 'var(--ink)'}">${usd(cap ? Z : 0)}</span></div>
+        <div class="mcol"><span class="mini-label">Released</span><span class="mbig" style="color:var(--ok)">${usd0(cap ? rest : h.amount)}</span><span class="hint">Can take up to 3 days to show in your account</span></div>
+      </div>
+      <div class="row"><button class="btn btn-primary" data-go="rental" data-id="${r.id}">View rental</button><button class="btn" data-go="rentals">My rentals</button></div>
+    </div>`;
+  }
+
+  return `<div class="wrap page narrow">
+    <button class="back" data-go="rental" data-id="${r.id}">← ${esc(l.short)}</button>
+    <h1 class="h-page">Return the ${esc(l.short)}</h1>
+    ${steps}
+    ${bar}
+    ${body}
+  </div>`;
+}
+function closeRental(r){
+  r.phase = 'returned'; r.returnedOn = iso(TODAY);
+  r.hold.released = iso(TODAY);
+  r.hold.refreshes = (r.hold.refreshes || []).filter(f => f.state === 'done');
+}
+function decide(kind, accepted){
+  const R = S.ret, r = rent(R.rid), h = r.hold, l = lst(r.lid), C = R.claim;
+  closeRental(r);
+  if (C.type === 'notreturned' && kind === 'capture') r.notReturned = true;
+  if (kind === 'release') { h.status = 'released'; h.reason = 'The claim was reviewed and closed. Nothing was charged.'; }
+  else { h.status = 'captured'; h.captured = C.amount; h.reason = `${CLAIM_TYPES[C.type]} claim approved. ${usd0(C.amount)} of the ${usd0(h.amount)} hold was charged${h.amount > C.amount ? ` and the other ${usd0(h.amount - C.amount)} was released` : ''}.`; }
+  R.outcome = kind; R.accepted = !!accepted; R.stage = 'decided';
+  pushNotif({rid:r.id, tone: kind === 'release' ? 'ok' : 'bad', title: kind === 'release' ? `Your ${usd0(h.amount)} hold has been released` : `Hold captured: ${usd0(C.amount)}`, body:`${l.short} · ${kind === 'release' ? 'claim closed, nothing charged' : 'claim approved'}.`});
+  render();
+}
+
+/* ---------- dashboard ---------- */
+function viewDashboard(){
+  const borrow = S.dashRole === 'borrow';
+  let tiles, rows, totals;
+  if (borrow) {
+    const paid = RENTALS.filter(r => r.phase !== 'requested').reduce((a, r) => a + charge(lst(r.lid), r.days), 0);
+    const cap = RENTALS.reduce((a, r) => a + (r.hold.status === 'captured' ? r.hold.captured : 0), 0);
+    const held = RENTALS.filter(r => r.hold.status === 'active');
+    const heldSum = held.reduce((a, r) => a + r.hold.amount, 0);
+    const pend = RENTALS.filter(r => r.hold.status === 'pending').reduce((a, r) => a + r.hold.amount, 0);
+    const rel = RENTALS.reduce((a, r) => a + (r.hold.status === 'released' ? r.hold.amount : r.hold.status === 'captured' ? r.hold.amount - r.hold.captured : 0), 0);
+    totals = {held:heldSum, rel, cap};
+    tiles = `<div class="stat"><span class="mini-label">Charged</span><span class="stat-n">${usd(paid + cap)}</span><p>${usd(paid)} rental fees${cap ? ` · ${usd(cap)} from claims` : ''}</p></div>
+      <div class="stat held"><span class="mini-label">Held now</span><span class="stat-n">${usd0(heldSum)}</span><p>Not charged. Across ${plural(held.length,'rental')}.${pend ? ` ${usd0(pend)} more after approval.` : ''}</p></div>
+      <div class="stat rel"><span class="mini-label">Released</span><span class="stat-n">${usd0(rel)}</span><p>Holds returned to you after rentals</p></div>
+      <div class="stat cap"><span class="mini-label">Captured</span><span class="stat-n">${usd0(cap)}</span><p>Charged from holds after approved claims</p></div>`;
+    rows = RENTALS.map(r => { const l = lst(r.lid); return `<tr><td><button class="linkbtn" data-go="rental" data-id="${r.id}">${esc(l.short)}</button><br><span class="hint">${esc(l.lender)}</span></td><td>${fmtD(D(r.start))} – ${fmtD(endOf(r))}</td><td class="num">${r.phase === 'requested' ? '$0.00' : usd(charge(l, r.days) + (r.hold.captured || 0))}</td><td class="num"><span class="held-amt">${usd0(r.hold.amount)}</span></td><td>${holdBadge(r.hold)}</td></tr>`; }).join('');
+  } else {
+    const earned = LENDING.reduce((a, x) => a + x.fee, 0);
+    const held = LENDING.filter(x => x.hold.status === 'active').reduce((a, x) => a + x.hold.amount, 0);
+    const rel = LENDING.reduce((a, x) => a + (x.hold.status === 'released' ? x.hold.amount : x.hold.status === 'captured' ? x.hold.amount - x.hold.captured : 0), 0);
+    const cap = LENDING.reduce((a, x) => a + (x.hold.status === 'captured' ? x.hold.captured : 0), 0);
+    totals = {held, rel, cap};
+    tiles = `<div class="stat"><span class="mini-label">Earned</span><span class="stat-n">${usd(earned + cap)}</span><p>${usd(earned)} rental fees${cap ? ` · ${usd(cap)} from claims` : ''}</p></div>
+      <div class="stat held"><span class="mini-label">Held on your items</span><span class="stat-n">${usd0(held)}</span><p>Protects your items. Not paid to you unless a claim is approved.</p></div>
+      <div class="stat rel"><span class="mini-label">Released to borrowers</span><span class="stat-n">${usd0(rel)}</span><p>Clean returns</p></div>
+      <div class="stat cap"><span class="mini-label">Captured for you</span><span class="stat-n">${usd0(cap)}</span><p>Paid to you from approved claims</p></div>`;
+    rows = LENDING.map(x => `<tr><td>${esc(x.item)}<br><span class="hint">Borrowed by ${esc(x.who)}</span></td><td>${fmtD(D(x.start))} – ${fmtD(addDays(D(x.start), x.days))}</td><td class="num">${usd(x.fee)}</td><td class="num"><span class="held-amt">${usd0(x.hold.amount)}</span></td><td>${holdBadge(x.hold)}</td></tr>`).join('');
+  }
+  const all = totals.held + totals.rel + totals.cap || 1;
+  const pct = n => (n / all * 100).toFixed(1) + '%';
+  return `<div class="wrap page">
+    <h1 class="h-page">Dashboard</h1>
+    <div class="seg" role="tablist" aria-label="View">
+      <button role="tab" id="dash-borrow" aria-selected="${borrow}" class="${borrow ? 'on' : ''}" data-action="dash-role" data-role="borrow">Borrowing</button>
+      <button role="tab" id="dash-lend" aria-selected="${!borrow}" class="${!borrow ? 'on' : ''}" data-action="dash-role" data-role="lend">Lending</button>
+    </div>
+    <div class="stats">${tiles}</div>
+    <section class="panel pad">
+      <div class="row" style="justify-content:space-between"><h2 class="h-small">Where ${borrow ? 'your' : 'borrowers’'} holds stand</h2><span class="hint">Held money ${borrow ? 'is still yours' : 'belongs to the borrower'} until a claim is approved.</span></div>
+      <div class="hbar" role="img" aria-label="Held ${usd0(totals.held)}, released ${usd0(totals.rel)}, captured ${usd0(totals.cap)}">
+        ${totals.held ? `<span class="s-held" style="width:${pct(totals.held)}"></span>` : ''}${totals.rel ? `<span class="s-rel" style="width:${pct(totals.rel)}"></span>` : ''}${totals.cap ? `<span class="s-cap" style="width:${pct(totals.cap)}"></span>` : ''}
+      </div>
+      <div class="legend"><span><i class="s-held"></i>Held ${usd0(totals.held)}</span><span><i class="s-rel"></i>Released ${usd0(totals.rel)}</span><span><i class="s-cap"></i>Captured ${usd0(totals.cap)}</span></div>
+    </section>
+    <section class="stack">
+      <h2 class="h-sec">${borrow ? 'Your rentals' : 'Your items on loan'}</h2>
+      <div class="tablewrap"><table class="tbl">
+        <thead><tr><th>Item</th><th>Dates</th><th class="num">${borrow ? 'Charged' : 'Rental fee earned'}</th><th class="num">Hold</th><th>Hold status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </section>
+  </div>`;
+}
+
+/* ---------- create a listing ---------- */
+const CAT_HUE = {Electronics:222, Academic:196, Outdoors:140, Transport:18, Games:352, Other:262};
+function draftListing(){
+  const c = S.create, hold = c.touched ? clamp(c.hold, holdRange(c.value).min, holdRange(c.value).max) : suggestHold(c.value);
+  return {title: c.name || 'Your item', short: c.name || 'Your item', cat:c.cat, icon:'box', h:CAT_HUE[c.cat], value:c.value, price:c.price || 0, hold, lender:'You', rating:5, trips:0, spot:c.spot, dist:0.1, cond:c.cond};
+}
+function holdUI(){
+  const c = S.create, r = holdRange(c.value), sug = suggestHold(c.value), d = draftListing();
+  const tiers = [['Under $50','$5 – $15'],['$50 to $150','$25 – $50'],['$150 and up','$75 – $150']];
+  return `<p>Suggested for an item worth ${usd0(c.value)}: <b class="held-amt">${usd0(sug)}</b></p>
+    <div class="amt-row"><input type="range" id="c-hold" min="${r.min}" max="${r.max}" step="5" value="${d.hold}" aria-label="Protection hold amount"><output id="c-hold-v" class="held-amt amt-big">${usd0(d.hold)}</output></div>
+    <p class="hint">Allowed for items worth ${r.label}: ${usd0(r.min)} to ${usd0(r.max)}. <button type="button" class="linkbtn" data-action="hold-reset" id="hold-reset" ${d.hold === sug ? 'hidden' : ''}>Use suggested</button></p>
+    <table class="tiers"><thead><tr><th>Estimated value</th><th>Protection hold</th></tr></thead><tbody>${tiers.map((t, i) => `<tr class="${i === r.key ? 'on' : ''}"><td>${t[0]}</td><td>${t[1]}</td></tr>`).join('')}</tbody></table>`;
+}
+function viewCreate(){
+  const c = S.create, d = draftListing();
+  const cats = Object.keys(CAT_HUE), conds = ['Like new','Good','Fair'];
+  return `<div class="wrap page">
+    <h1 class="h-page">List an item</h1>
+    <div class="create">
+      <form id="createform" class="panel pad" novalidate>
+        <div class="field"><label for="c-name">Item name</label><input type="text" id="c-name" value="${esc(c.name)}"></div>
+        <div class="grid2">
+          <div class="field"><label for="c-cat">Category</label><select id="c-cat">${cats.map(x => `<option ${x === c.cat ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+          <div class="field"><label for="c-cond">Condition</label><select id="c-cond">${conds.map(x => `<option ${x === c.cond ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+          <div class="field"><label for="c-value">Estimated value ($)</label><input type="number" id="c-value" min="1" step="1" value="${c.value}"></div>
+          <div class="field"><label for="c-price">Price per day ($)</label><input type="number" id="c-price" min="1" step="1" value="${c.price}"></div>
+        </div>
+        <div class="field"><label for="c-spot">Pickup spot</label><input type="text" id="c-spot" value="${esc(c.spot)}"></div>
+        <section class="hold-set" aria-labelledby="hold-h">
+          <h2 class="h-small" id="hold-h">Protection hold amount</h2>
+          <p class="hint">Borrowers' cards are held for this amount during the rental. It's only charged if you file a claim and it's approved.</p>
+          <div id="hold-ui" class="stack">${holdUI()}</div>
+        </section>
+        <p class="err-text" id="c-err" role="alert"></p>
+        <div><button class="btn btn-primary" type="submit">Publish listing</button></div>
+      </form>
+      <aside class="create-prev" aria-label="Preview">
+        <div class="flabel">How borrowers see it</div>
+        <div id="prev">${cardHTML(d, 'div')}</div>
+        <div id="prev-hold">${holdBox(d.hold, 'tip-prev')}</div>
+      </aside>
+    </div>
+  </div>`;
+}
+function updateCreate(rebuildHold){
+  const d = draftListing();
+  if (rebuildHold) $('#hold-ui').innerHTML = holdUI();
+  else { $('#c-hold-v').textContent = usd0(d.hold); $('#hold-reset').hidden = d.hold === suggestHold(S.create.value); }
+  $('#prev').innerHTML = cardHTML(d, 'div');
+  $('#prev-hold').innerHTML = holdBox(d.hold, 'tip-prev');
+}
+function publishListing(){
+  const c = S.create, err = $('#c-err');
+  if (!c.name.trim()) { err.textContent = 'Give the item a name.'; return; }
+  if (!(c.value > 0)) { err.textContent = 'Enter the item’s estimated value.'; return; }
+  if (!(c.price > 0)) { err.textContent = 'Enter a price per day.'; return; }
+  const d = draftListing();
+  LISTINGS.unshift({...d, id:'u' + Date.now().toString(36), title:c.name.trim(), short:c.name.trim(), lender:'You', desc:'Your new listing.'});
+  S.filters = {q:'', cat:'All', maxPrice:20, hold:'any'};
+  toast(`Listing published. Borrowers see a ${usd0(d.hold)} hold.`);
+  go('browse');
+}
+
+/* ---------- safety ---------- */
+function viewSafety(){
+  return `<div class="wrap page">
+    <p class="eyebrow">Safety</p>
+    <h1 class="h-page">How the protection hold works</h1>
+    <p class="lede" style="color:var(--muted)">Instead of asking for money up front, KnightLend puts a temporary hold on your card, like a gas pump, hotel or vending machine does. The money stays yours. It's only charged if something goes wrong.</p>
+    <ol class="flow">
+      <li class="h"><span class="n">Step 1</span><h3>Lender approves, you place the hold</h3><p>Your card is asked to set the hold amount aside. It's a hold, not a charge. Only the rental fee is charged.</p></li>
+      <li class="h"><span class="n">Step 2</span><h3>You have the item</h3><p>The hold stays on your card. Holds last about 7 days, so on longer rentals we refresh it automatically and remind you the day before. No charge.</p></li>
+      <li class="g"><span class="n">Step 3</span><h3>You return it the same way</h3><p>Both of you add return photos. On a clean return, the hold is released within 3 days.</p></li>
+      <li class="r"><span class="n">If something goes wrong</span><h3>The lender can file a claim</h3><p>For damage, a late return or no return. You can respond with your side. If the claim is approved, up to the held amount is charged.</p></li>
+    </ol>
+    <div class="vs">
+      <div class="c"><h3>Charged</h3><ul><li>The rental fee and a ${usd(SERVICE)} service fee</li><li>Paid when you place the hold</li><li>Shown in solid text in the app</li></ul></div>
+      <div class="hh"><h3>Held, not charged</h3><ul><li>The protection hold amount</li><li>Set aside on your card, still your money</li><li>Released automatically after a clean return</li><li>Shown with a dashed outline, so it never looks like a charge</li></ul></div>
+    </div>
+    <section class="stack">
+      <h2 class="h-sec">How much is held</h2>
+      <p class="muted">The hold scales with the item's value. Lenders can adjust it within these limits.</p>
+      <div class="tablewrap" style="max-width:520px"><table class="tiers"><thead><tr><th>Item's estimated value</th><th>Protection hold</th></tr></thead><tbody>
+        <tr><td>Under $50</td><td>$5 to $15</td></tr><tr><td>$50 to $150</td><td>$25 to $50</td></tr><tr><td>$150 and up</td><td>$75 to $150</td></tr>
+      </tbody></table></div>
+    </section>
+    <section class="stack">
+      <h2 class="h-sec">Good to know</h2>
+      <div class="faq">
+        <div><h3>Debit cards</h3><p>Debit cards: the held amount is temporarily unavailable in your account. If you'd rather keep that money free, use a credit card. You can switch cards on the hold step.</p></div>
+        <div><h3>If your card declines the hold</h3><p>Nothing is charged, and the request pauses until a hold goes through. Try another card or ask your bank to allow temporary holds.</p></div>
+        <div><h3>If a refresh fails</h3><p>We'll tell you right away and ask you to update your card. The rental keeps going while you fix it.</p></div>
+        <div><h3>Destroyed or unreturned items</h3><p>The borrower may owe the item's full replacement cost, even when that's more than the hold.</p></div>
+        <div><h3>Photos are evidence</h3><p>Both sides can add condition photos at pickup and return. Reviews compare them when there's a claim.</p></div>
+        <div><h3>Cancelling</h3><p>The hold is released as soon as you cancel. It's never used for cancellation fees.</p></div>
+      </div>
+    </section>
+    <section class="stack prose">
+      <h2 class="h-sec">Meeting up safely</h2>
+      <p class="muted">Meet at the listed campus pickup spot during the day. Check the item together and take photos before you leave. Keep messages and payments inside KnightLend so there's a record if you need help.</p>
+    </section>
+  </div>`;
+}
+
+/* ---------- notifications, toast ---------- */
+function renderNotifs(){
+  const el = $('#notifs');
+  el.hidden = !S.notifOpen;
+  $('#bell').setAttribute('aria-expanded', S.notifOpen);
+  if (S.notifOpen) el.innerHTML = `<div class="wrap"><div class="notif-panel" role="dialog" aria-label="Notifications">
+    <div class="notif-head"><b>Notifications</b><button class="linkbtn" data-action="toggle-notifs">Close</button></div>
+    ${NOTIFS.map(n => `<button class="notif n-${n.tone}" ${n.rid ? `data-go="rental" data-id="${n.rid}"` : 'data-action="toggle-notifs"'}><b>${esc(n.title)}</b><span>${esc(n.body)}</span><time>${n.when}</time></button>`).join('')}
+  </div></div>`;
+  const cnt = $('#bell-count');
+  cnt.textContent = unread; cnt.hidden = !unread;
+}
+function pushNotif(n){ NOTIFS.unshift({...n, when:'Just now'}); unread++; renderNotifs(); }
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3200); }
+
+/* ---------- routing ---------- */
+const VIEWS = {browse:viewBrowse, listing:viewListing, request:viewRequest, rentals:viewRentals, rental:viewRental, return:viewReturn, dashboard:viewDashboard, create:viewCreate, safety:viewSafety};
+const NAV_OF = {listing:'browse', request:'browse', rental:'rentals', return:'rentals'};
+function render(){
+  const fid = document.activeElement && document.activeElement.id;
+  app.innerHTML = VIEWS[S.view]();
+  const key = NAV_OF[S.view] || S.view;
+  document.querySelectorAll('.nav [data-go]').forEach(b => { const on = b.dataset.go === key; b.classList.toggle('on', on); on ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'); });
+  renderNotifs();
+  if (fid) { const el = document.getElementById(fid); if (el && app.contains(el)) el.focus({preventScroll:true}); }
+}
+function go(view, ds = {}){
+  if (ds.id && view === 'listing') { if (S.listingId !== ds.id) S.days = 3; S.listingId = ds.id; }
+  if (ds.id && view === 'rental') S.rentalId = ds.id;
+  S.updating = !!ds.update;
+  if (S.updating) resetCard();
+  if (view !== 'rental' || S.view !== 'request') S.flash = null;
+  S.view = view; S.notifOpen = false;
+  render();
+  window.scrollTo(0, 0);
+  const h = app.querySelector('h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({preventScroll:true}); }
+}
+
+/* ---------- actions ---------- */
+const A = {
+  cat: b => { S.filters.cat = b.dataset.cat; document.querySelectorAll('.chip').forEach(c => { const on = c.dataset.cat === S.filters.cat; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); }); updateGrid(); },
+  days: b => { S.days = clamp(S.days + +b.dataset.d, 1, 21); render(); },
+  tip: b => b.parentElement.classList.toggle('open'),
+  'start-request': () => {
+    const l = lst(S.listingId);
+    S.req = {lid:l.id, days:S.days, start:iso(addDays(TODAY,1)), step:0, agreed:false, msg:`Hi ${first(l.lender)}, I'd like to borrow this for ${plural(S.days,'day')}. I can pick it up at ${l.spot} tomorrow. Thanks!`};
+    resetCard(); go('request');
+  },
+  'req-send': () => { S.req.step = 1; render(); toast('Request sent. Nothing charged or held.'); },
+  'req-approve': () => { S.req.step = 2; const l = lst(S.req.lid); pushNotif({rid: S.req.rentalId || null, tone:'info', title:`${first(l.lender)} approved your request`, body:`${l.short} · place the protection hold to confirm.`}); render(); },
+  'req-cancel': () => { const id = S.req.lid; go('listing', {id}); toast('Request cancelled. Nothing was charged or held.'); },
+  'req-agree': () => { if (!S.req.agreed) return; S.req.step = 3; resetCard(); render(); },
+  'fill-card': b => { Object.assign(S.card, {num:b.dataset.n, name:S.card.name || 'Alex Rivera', exp:'12/29', cvc:'123', zip:'12345', status:'idle', err:''}); render(); },
+  'new-card': () => { resetCard(true); render(); const n = $('#cc-num'); if (n) n.focus(); },
+  'update-card': () => { S.updating = true; resetCard(); render(); const n = $('#cc-name'); if (n) n.focus(); },
+  'sim-refresh-ok': () => {
+    const r = rent(S.rentalId), h = r.hold, f = h.refreshes.find(f => f.state === 'scheduled');
+    f.state = 'done'; settleRefresh(r);
+    S.flash = {title:'Hold refreshed. No charge.', text:`Your ${usd0(h.amount)} hold stays active until ${fmtW(holdExpires(h))}.`};
+    pushNotif({rid:r.id, tone:'ok', title:'Hold refreshed. No charge.', body:`${lst(r.lid).short} · active until ${fmtD(holdExpires(h))}.`});
+    render();
+  },
+  'sim-refresh-fail': () => {
+    const r = rent(S.rentalId), f = r.hold.refreshes.find(f => f.state === 'scheduled');
+    f.state = 'failed'; S.flash = null;
+    pushNotif({rid:r.id, tone:'bad', title:'Your hold refresh didn’t go through', body:`${lst(r.lid).short} · update your card to keep the hold active.`});
+    render();
+  },
+  'sim-approve-pending': () => {
+    const r = rent(S.rentalId);
+    S.req = {lid:r.lid, days:r.days, start:r.start, step:2, agreed:false, msg:'', rentalId:r.id};
+    resetCard(); go('request');
+  },
+  msg: () => toast('Messaging isn’t part of this prototype.'),
+  'start-return': () => {
+    const r = rent(S.rentalId), l = lst(r.lid);
+    S.ret = {rid:r.id, stage:'photos', after:[], claim:{type:'damage', ...claimDefaults('damage', l)}, resp:{choice:'dispute', note:''}, outcome:null, hadClaim:false};
+    go('return');
+  },
+  'sample-photo': () => { S.ret.after.push({sample:true}); render(); },
+  'remove-photo': b => { S.ret.after.splice(+b.dataset.i, 1); render(); },
+  'ret-handback': () => { S.ret.stage = 'inspect'; render(); },
+  'ret-clean': () => {
+    const r = rent(S.ret.rid), h = r.hold;
+    closeRental(r); h.status = 'released'; h.reason = 'Returned in the same condition. Nothing was charged.';
+    S.ret.stage = 'released';
+    pushNotif({rid:r.id, tone:'ok', title:`Your ${usd0(h.amount)} hold has been released`, body:`${lst(r.lid).short} came back in the same condition.`});
+    render();
+  },
+  'ret-claim': () => { S.ret.stage = 'claim_form'; S.ret.hadClaim = true; render(); },
+  'ret-file': () => { const n = $('#cl-note'); if (n) S.ret.claim.note = n.value; S.ret.stage = 'claim_open'; render(); toast('Claim filed. The hold stays in place. Nothing charged yet.'); },
+  'ret-respond': () => { if (S.ret.resp.choice === 'accept') decide('capture', true); else { S.ret.stage = 'review'; render(); } },
+  'ret-decide': b => decide(b.dataset.k),
+  'toggle-notifs': () => { S.notifOpen = !S.notifOpen; if (S.notifOpen) unread = 0; renderNotifs(); },
+  'dash-role': b => { S.dashRole = b.dataset.role; render(); },
+  'hold-reset': () => { S.create.touched = false; S.create.hold = null; updateCreate(true); }
+};
+
+document.addEventListener('click', e => {
+  if (S.notifOpen && !e.target.closest('.notif-panel') && !e.target.closest('#bell')) { S.notifOpen = false; renderNotifs(); }
+  document.querySelectorAll('.tip.open').forEach(t => { if (!t.contains(e.target)) t.classList.remove('open'); });
+  const g = e.target.closest('[data-go]');
+  if (g) { go(g.dataset.go, g.dataset); return; }
+  const a = e.target.closest('[data-action]');
+  if (a && A[a.dataset.action]) A[a.dataset.action](a, e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.tip.open').forEach(t => t.classList.remove('open'));
+  if (S.notifOpen) { S.notifOpen = false; renderNotifs(); $('#bell').focus(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target, c = S.card;
+  switch (t.id) {
+    case 'f-q': S.filters.q = t.value; updateGrid(); break;
+    case 'f-price': S.filters.maxPrice = +t.value; $('#f-price-v').textContent = 'up to $' + t.value; updateGrid(); break;
+    case 'req-msg': S.req.msg = t.value; break;
+    case 'cc-num': {
+      const d = t.value.replace(/\D/g, '').slice(0, 16), f = fmtCard(d);
+      if (t.value !== f) t.value = f;
+      c.num = d; c.err = '';
+      if (c.status === 'declined') { c.status = 'idle'; }
+      $('#cc-err').innerHTML = '';
+      const tc = TEST_CARDS[d];
+      $('#cc-brand').textContent = tc ? `${tc.brand} ${tc.type}` : '';
+      $('#cc-type').innerHTML = cardTypeNotice(tc, (S.view === 'request' ? lst(S.req.lid).hold : rent(S.rentalId).hold.amount));
+      break;
+    }
+    case 'cc-exp': { let d = t.value.replace(/\D/g, '').slice(0, 4); if (d.length > 2) d = d.slice(0, 2) + '/' + d.slice(2); if (t.value !== d && !(e.inputType || '').startsWith('delete')) t.value = d; c.exp = t.value; break; }
+    case 'cc-cvc': t.value = t.value.replace(/\D/g, '').slice(0, 4); c.cvc = t.value; break;
+    case 'cc-zip': t.value = t.value.replace(/\D/g, '').slice(0, 5); c.zip = t.value; break;
+    case 'cc-name': c.name = t.value; break;
+    case 'c-name': S.create.name = t.value; updateCreate(false); break;
+    case 'c-spot': S.create.spot = t.value; break;
+    case 'c-price': S.create.price = +t.value; updateCreate(false); break;
+    case 'c-value': { const v = +t.value; if (v > 0) { const before = holdRange(S.create.value).key; S.create.value = v; if (S.create.touched && holdRange(v).key !== before) S.create.touched = false; updateCreate(true); } break; }
+    case 'c-hold': S.create.hold = +t.value; S.create.touched = true; updateCreate(false); break;
+    case 'cl-amt': S.ret.claim.amount = +t.value; $('#cl-amt-v').textContent = usd0(+t.value); break;
+    case 'cl-note': S.ret.claim.note = t.value; break;
+    case 'rs-note': S.ret.resp.note = t.value; break;
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.name === 'f-hold') { S.filters.hold = t.value; updateGrid(); }
+  if (t.id === 'agree') { S.req.agreed = t.checked; $('#agree-btn').disabled = !t.checked; }
+  if (t.id === 'c-cat') { S.create.cat = t.value; updateCreate(false); }
+  if (t.id === 'c-cond') { S.create.cond = t.value; updateCreate(false); }
+  if (t.name === 'cl-type') { const l = lst(rent(S.ret.rid).lid); S.ret.claim = {type:t.value, ...claimDefaults(t.value, l)}; render(); }
+  if (t.name === 'rs-choice') { S.ret.resp.choice = t.value; render(); }
+  if (t.id === 'ret-file' && t.files) {
+    [...t.files].slice(0, 6).forEach(file => {
+      const fr = new FileReader();
+      fr.onload = () => { S.ret.after.push({src: fr.result}); render(); };
+      fr.readAsDataURL(file);
+    });
+  }
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'cardform') placeHold(e.target.dataset.ctx);
+  if (e.target.id === 'createform') publishListing();
+});
+
+/* ---------- boot ---------- */
+const h0 = (location.hash || '').slice(1);
+if (['browse','rentals','dashboard','create','safety'].includes(h0)) S.view = h0;
+render();
+</script>
