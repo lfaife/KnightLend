@@ -301,7 +301,7 @@ function ListingForm({ id }: { id?: string }) {
         {sug && (
           <div className="space-y-3 rounded-card bg-gold-soft p-4">
             <p className="text-sm">
-              Suggested for a {money0(f.estimated_value)} item: <strong>{money0(sug.suggested)}</strong>. Items {sug.tier_label.toLowerCase()} can hold between {money0(sug.min_hold)} and {money0(sug.max_hold)}.
+              Suggested for a {money0(sug.estimated_value)} item: <strong>{money0(sug.suggested)}</strong>. Items {sug.tier_label.toLowerCase()} can hold between {money0(sug.min_hold)} and {money0(sug.max_hold)}.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <label htmlFor="hold" className="sr-only">

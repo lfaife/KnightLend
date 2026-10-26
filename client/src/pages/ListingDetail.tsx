@@ -197,6 +197,16 @@ function DetailView({ item }: { item: Detail }) {
   };
   const spot = meta?.pickup_spots.find((s) => s.id === item.pickup.spot_id);
 
+  // The mobile "Choose dates" shortcut hides once the booking panel itself is on screen.
+  const [panelInView, setPanelInView] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById("request");
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setPanelInView(entry.isIntersecting), { threshold: 0.05 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <div className="page">
       <nav className="mb-3 text-sm" aria-label="Breadcrumb">
@@ -364,7 +374,7 @@ function DetailView({ item }: { item: Detail }) {
           </div>
         </aside>
       </div>
-      {!item.is_owner && (
+      {!item.is_owner && !panelInView && (
         <a href="#request" className="btn-primary fixed inset-x-4 bottom-[76px] z-20 py-3 shadow-card lg:hidden">
           {money0(item.prices.day)}/day · Choose dates
         </a>

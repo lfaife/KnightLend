@@ -18,7 +18,7 @@ function describe(j: JobReport | null): string {
 /** Dev-only controls. Rendered only when the server reports DEMO_MODE=true. */
 export function DemoBar() {
   const { health, bump } = useDemo();
-  const { user, signIn } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const [users, setUsers] = useState<DemoUser[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -110,8 +110,16 @@ export function DemoBar() {
               onClick={() => {
                 setConfirmReset(false);
                 run("reset", async () => {
+                  // Reset re-creates every account with new ids, so reload the list and
+                  // sign back in as the same demo person.
+                  const label = users.find((u) => u.id === user?.id)?.label;
                   await api.demo.reset();
-                  return "Demo data reset.";
+                  const fresh = await api.demo.users();
+                  setUsers(fresh);
+                  const same = fresh.find((u) => u.label === label);
+                  if (same) signIn(await api.demo.loginAs(same.id));
+                  else signOut();
+                  return same ? `Demo data reset. Still signed in as ${same.label}.` : "Demo data reset.";
                 });
               }}
             >
